@@ -17,7 +17,7 @@ import requests
 # e.g. BASE_URL = "https://<paste-your-actual-render-url-here>"
 # Can also be set via environment variable: BASE_URL="https://..."
 # or command line argument: python seed_demo_data.py https://...
-DEFAULT_RENDER_URL = "https://<paste-your-actual-render-url-here>"
+DEFAULT_RENDER_URL = "https://carbon-calculation.onrender.com"
 ENV_URL = os.environ.get("BASE_URL")
 CLI_URL = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1].startswith("http") else None
 

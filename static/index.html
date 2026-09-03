@@ -1482,8 +1482,27 @@
             width: 32px;
             height: 1px;
             background: var(--accent-vermillion);
-            margin: 0 auto 2rem;
+            margin: 0 auto 1.5rem;
             opacity: 0.5;
+        }
+
+        /* Write-form manager lock */
+        .write-form-locked {
+            display: none !important;
+        }
+        .manager-view-notice {
+            display: none;
+            padding: 0.85rem 1.25rem;
+            background: #F4F1EA;
+            border-left: 3px solid #73726E;
+            font-size: 0.82rem;
+            color: #555550;
+            font-family: var(--font-body);
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.02em;
+        }
+        .manager-view-notice.visible {
+            display: block;
         }
     </style>
 </head>
@@ -1495,16 +1514,35 @@
             <div class="login-logo">Nexgile-<span>Decarb</span>X</div>
             <div class="login-subtitle">Enterprise Carbon Accounting Platform</div>
             <div class="login-divider"></div>
-            <input
-                id="login-input"
-                class="login-input"
-                type="password"
-                placeholder="Enter access code"
-                autocomplete="off"
-                spellcheck="false"
-            >
+            <div style="margin-bottom: 0.85rem; text-align: left;">
+                <label for="login-username" style="display: block; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.3rem;">Username</label>
+                <input
+                    id="login-username"
+                    class="login-input"
+                    type="text"
+                    placeholder="e.g. employee1 or manager1"
+                    autocomplete="username"
+                    spellcheck="false"
+                >
+            </div>
+            <div style="margin-bottom: 1.25rem; text-align: left;">
+                <label for="login-input" style="display: block; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.3rem;">Password</label>
+                <input
+                    id="login-input"
+                    class="login-input"
+                    type="password"
+                    placeholder="Enter password"
+                    autocomplete="current-password"
+                    spellcheck="false"
+                >
+            </div>
             <button id="login-btn" class="login-btn">Sign In</button>
-            <div id="login-error" class="login-error">Incorrect access code. Please try again.</div>
+            <div id="login-error" class="login-error">Incorrect username or password.</div>
+            <div style="margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-hairline); padding-top: 1rem; text-align: left;">
+                <strong>Demo Accounts:</strong><br>
+                &bull; <code>employee1</code> / <code>employee123</code> (Write access)<br>
+                &bull; <code>manager1</code> / <code>manager123</code> (View-only)
+            </div>
         </div>
     </div>
 
@@ -1528,10 +1566,11 @@
                     <span class="nav-tagline">Carbon Accounting</span>
                 </div>
             </div>
-            <div class="nav-status">
-                <span class="status-dot"></span>
-                <span>System Active</span>
-            </div>
+                <div class="nav-status" id="nav-user-area">
+                    <span class="status-dot"></span>
+                    <span id="nav-user-label">System Active</span>
+                    <button id="nav-logout-btn" style="display:none; margin-left:1rem; background:none; border:none; color:var(--accent-vermillion); font-size:0.78rem; cursor:pointer; font-family:var(--font-body); letter-spacing:0.04em; text-transform:uppercase; padding:0;" onclick="handleLogout()">Log out</button>
+                </div>
         </div>
     </nav>
 
@@ -1623,6 +1662,10 @@
                 <h2 class="section-title">Data Ingestion</h2>
             </div>
             <p class="section-desc">Register operational facilities and record verified fuel &amp; energy entries.</p>
+
+            <div id="data-ingestion-manager-notice" class="manager-view-notice">
+                🔒 <strong>View-only access (Manager role)</strong> &mdash; Facility registration and activity entry forms are disabled.
+            </div>
 
             <div class="forms-layout">
                 <!-- Column A: Register Facility -->
@@ -1995,6 +2038,10 @@
             </div>
             <p class="section-desc">Life Cycle Assessment (LCA) module calculating cradle-to-gate component emissions per product unit.</p>
 
+            <div id="pcf-manager-notice" class="manager-view-notice">
+                🔒 <strong>View-only access (Manager role)</strong> &mdash; Product and component registration forms are disabled.
+            </div>
+
             <div class="forms-layout">
                 <!-- Column A: Create Product -->
                 <div>
@@ -2097,6 +2144,10 @@
                 <h2 class="section-title">Supplier Engagement</h2>
             </div>
             <p class="section-desc">Supply chain Scope 3 primary data collection, verified disclosures, and supplier scorecards.</p>
+
+            <div id="supplier-manager-notice" class="manager-view-notice">
+                🔒 <strong>View-only access (Manager role)</strong> &mdash; Supplier registration and emissions logging forms are disabled.
+            </div>
 
             <div class="forms-layout">
                 <!-- Column A: Register Supplier -->
@@ -3722,7 +3773,7 @@
             submitBtn.disabled = true;
 
             try {
-                const response = await fetch('/facilities', {
+                const response = await authFetch('/facilities', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -3798,7 +3849,7 @@
                     date
                 };
 
-                const response = await fetch('/activity-entries', {
+                const response = await authFetch('/activity-entries', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -3850,7 +3901,7 @@
             submitBtn.disabled = true;
 
             try {
-                const response = await fetch('/products', {
+                const response = await authFetch('/products', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, sku, facility_id })
@@ -3914,7 +3965,7 @@
                     material_emission_factor_kgco2e_per_kg
                 };
 
-                const response = await fetch(`/products/${product_id}/components`, {
+                const response = await authFetch(`/products/${product_id}/components`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -3955,7 +4006,7 @@
             submitBtn.disabled = true;
 
             try {
-                const response = await fetch('/suppliers', {
+                const response = await authFetch('/suppliers', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ name, country, category })
@@ -4013,7 +4064,7 @@
                     scope3_kg
                 };
 
-                const response = await fetch(`/suppliers/${supplier_id}/emissions`, {
+                const response = await authFetch(`/suppliers/${supplier_id}/emissions`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
@@ -4046,90 +4097,204 @@
 
         // App initialization is deferred — called by login gate after successful auth.
 
-    </script>
+        // ── Auth State (in-memory, session-only) ───────────────────────
+        let authToken = null;
+        let authRole = null;
+        let authUsername = null;
+        let appInitialized = false;
 
-    <!-- ── Login Gate JS ── -->
-    <script>
-        (function () {
-            const ACCESS_CODE = 'decarbx2026';
-            let appInitialized = false;
+        // ── authFetch: wraps fetch with Bearer token, handles 401/403 ──
+        async function authFetch(url, options = {}) {
+            const headers = { ...(options.headers || {}) };
+            if (authToken) headers['Authorization'] = `Bearer ${authToken}`;
+            const res = await fetch(url, { ...options, headers });
+            if (res.status === 401 || res.status === 403) {
+                handleLogout();
+                throw new Error(res.status === 403 ? 'Access denied (403 Forbidden)' : 'Session expired. Please log in again.');
+            }
+            return res;
+        }
+
+        // ── Role-based UI application ──────────────────────────────────
+        function applyRoleUI(role) {
+            const isManager = role === 'manager';
+            // Data Ingestion forms (Register Facility + Log Activity Entry)
+            const ingestionForms = document.querySelector('#data-ingestion .forms-layout');
+            const ingestionNotice = document.getElementById('data-ingestion-manager-notice');
+            if (ingestionForms) ingestionForms.classList.toggle('write-form-locked', isManager);
+            if (ingestionNotice) ingestionNotice.classList.toggle('visible', isManager);
+
+            // PCF forms (Register Product + Add Component)
+            const pcfForms = document.querySelector('#product-footprint .forms-layout');
+            const pcfNotice = document.getElementById('pcf-manager-notice');
+            if (pcfForms) pcfForms.classList.toggle('write-form-locked', isManager);
+            if (pcfNotice) pcfNotice.classList.toggle('visible', isManager);
+
+            // Supplier forms (Register Supplier + Log Emissions)
+            const suppForms = document.querySelector('#supplier-engagement .forms-layout');
+            const suppNotice = document.getElementById('supplier-manager-notice');
+            if (suppForms) suppForms.classList.toggle('write-form-locked', isManager);
+            if (suppNotice) suppNotice.classList.toggle('visible', isManager);
+
+            // Update nav indicator
+            const navLabel = document.getElementById('nav-user-label');
+            const logoutBtn = document.getElementById('nav-logout-btn');
+            if (navLabel) navLabel.textContent = `${authUsername} (${role})`;
+            if (logoutBtn) logoutBtn.style.display = 'inline';
+        }
+
+        // ── Logout ─────────────────────────────────────────────────────
+        function handleLogout() {
+            authToken = null;
+            authRole = null;
+            authUsername = null;
+            appInitialized = false;
 
             const gate = document.getElementById('login-gate');
             const appContent = document.getElementById('app-content');
-            const input = document.getElementById('login-input');
-            const btn = document.getElementById('login-btn');
-            const errEl = document.getElementById('login-error');
+            const navLabel = document.getElementById('nav-user-label');
+            const logoutBtn = document.getElementById('nav-logout-btn');
 
-            function showError() {
-                errEl.classList.add('visible');
-                input.value = '';
-                input.focus();
-                setTimeout(() => errEl.classList.remove('visible'), 3000);
+            if (navLabel) navLabel.textContent = 'System Active';
+            if (logoutBtn) logoutBtn.style.display = 'none';
+            if (appContent) appContent.style.display = 'none';
+            if (gate) {
+                gate.style.opacity = '0';
+                gate.style.display = 'flex';
+                gate.style.transition = 'none';
+                requestAnimationFrame(() => {
+                    gate.style.transition = 'opacity 0.25s ease';
+                    gate.style.opacity = '1';
+                });
             }
+            // Reset login form
+            const uInput = document.getElementById('login-username');
+            const pInput = document.getElementById('login-input');
+            if (uInput) uInput.value = '';
+            if (pInput) pInput.value = '';
+        }
 
-            async function initApp() {
-                if (appInitialized) return;
-                appInitialized = true;
+        // ── App initialization (deferred until after login) ─────────────
+        async function initApp() {
+            if (appInitialized) return;
+            appInitialized = true;
 
-                initDefaultDate();
-                setupSidebar();
+            initDefaultDate();
+            setupSidebar();
 
-                const targetInput = document.getElementById('emissions-target-input');
-                if (targetInput) {
-                    targetInput.value = emissionsTarget;
-                    targetInput.addEventListener('input', (e) => {
-                        const val = parseFloat(e.target.value);
-                        emissionsTarget = isNaN(val) ? 0 : val;
-                        updateProgressBar();
-                    });
-                }
-
-                const exportBtn = document.getElementById('export-csv-btn');
-                if (exportBtn) exportBtn.addEventListener('click', exportEntriesToCSV);
-
-                const redSlider = document.getElementById('slider-reduction');
-                const priceSlider = document.getElementById('slider-price');
-                if (redSlider) redSlider.addEventListener('input', updateScenarioPlanning);
-                if (priceSlider) priceSlider.addEventListener('input', updateScenarioPlanning);
-
-                await fetchEmissionFactors();
-                await fetchFacilities();
-                await refreshAllData();
-                initMap();
-                await updateEmissionsMap();
-                updateScenarioPlanning();
-
-                let resizeTimer;
-                window.addEventListener('resize', () => {
-                    clearTimeout(resizeTimer);
-                    resizeTimer = setTimeout(() => {
-                        updateSankeyDiagram();
-                        if (mapInstance) mapInstance.invalidateSize();
-                    }, 180);
+            const targetInput = document.getElementById('emissions-target-input');
+            if (targetInput) {
+                targetInput.value = emissionsTarget;
+                targetInput.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    emissionsTarget = isNaN(val) ? 0 : val;
+                    updateProgressBar();
                 });
             }
 
-            async function handleLogin() {
-                const val = input.value.trim();
-                if (val === ACCESS_CODE) {
-                    gate.style.transition = 'opacity 0.3s ease';
-                    gate.style.opacity = '0';
-                    setTimeout(() => { gate.style.display = 'none'; }, 300);
-                    appContent.style.display = 'block';
-                    await initApp();
-                } else {
-                    showError();
-                }
+            const exportBtn = document.getElementById('export-csv-btn');
+            if (exportBtn) exportBtn.addEventListener('click', exportEntriesToCSV);
+
+            const redSlider = document.getElementById('slider-reduction');
+            const priceSlider = document.getElementById('slider-price');
+            if (redSlider) redSlider.addEventListener('input', updateScenarioPlanning);
+            if (priceSlider) priceSlider.addEventListener('input', updateScenarioPlanning);
+
+            await fetchEmissionFactors();
+            await fetchFacilities();
+            await refreshAllData();
+            initMap();
+            await updateEmissionsMap();
+            updateScenarioPlanning();
+
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    updateSankeyDiagram();
+                    if (mapInstance) mapInstance.invalidateSize();
+                }, 180);
+            });
+        }
+
+        // ── Login handler ──────────────────────────────────────────────
+        async function handleLogin() {
+            const username = (document.getElementById('login-username')?.value || '').trim();
+            const password = (document.getElementById('login-input')?.value || '').trim();
+            const errEl = document.getElementById('login-error');
+            const btn = document.getElementById('login-btn');
+
+            if (!username || !password) {
+                if (errEl) { errEl.classList.add('visible'); errEl.textContent = 'Please enter username and password.'; }
+                setTimeout(() => errEl && errEl.classList.remove('visible'), 3000);
+                return;
             }
 
-            btn.addEventListener('click', handleLogin);
-            input.addEventListener('keydown', (e) => {
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+
+            try {
+                const formData = new URLSearchParams();
+                formData.append('username', username);
+                formData.append('password', password);
+
+                const res = await fetch('/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                    body: formData,
+                });
+
+                if (!res.ok) {
+                    const data = await res.json().catch(() => ({}));
+                    if (errEl) {
+                        errEl.textContent = data.detail || 'Incorrect username or password. Please try again.';
+                        errEl.classList.add('visible');
+                    }
+                    document.getElementById('login-input').value = '';
+                    document.getElementById('login-input').focus();
+                    setTimeout(() => errEl && errEl.classList.remove('visible'), 3500);
+                    return;
+                }
+
+                const data = await res.json();
+                authToken = data.access_token;
+                authRole = data.role;
+                authUsername = data.username;
+
+                // Fade out gate, show app
+                const gate = document.getElementById('login-gate');
+                const appContent = document.getElementById('app-content');
+                gate.style.transition = 'opacity 0.3s ease';
+                gate.style.opacity = '0';
+                setTimeout(() => { gate.style.display = 'none'; }, 300);
+                appContent.style.display = 'block';
+
+                applyRoleUI(authRole);
+                await initApp();
+
+            } catch (err) {
+                if (errEl) {
+                    errEl.textContent = `Connection error: ${err.message}`;
+                    errEl.classList.add('visible');
+                }
+                setTimeout(() => errEl && errEl.classList.remove('visible'), 4000);
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
+        }
+
+        // ── Wire up events on DOM ready ────────────────────────────────
+        window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('login-btn').addEventListener('click', handleLogin);
+            document.getElementById('login-input').addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') handleLogin();
             });
-
-            // Auto-focus password field
-            window.addEventListener('DOMContentLoaded', () => input.focus());
-        })();
+            document.getElementById('login-username').addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') document.getElementById('login-input').focus();
+            });
+            document.getElementById('login-username').focus();
+        });
     </script>
 
     <!-- Toast Notification Container -->
@@ -4137,3 +4302,4 @@
 </div><!-- /#app-content -->
 </body>
 </html>
+

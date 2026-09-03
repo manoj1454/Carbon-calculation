@@ -10,6 +10,8 @@ from fastapi.staticfiles import StaticFiles
 # pyrefly: ignore [missing-import]
 from fastapi.responses import FileResponse
 # pyrefly: ignore [missing-import]
+from fastapi.security import OAuth2PasswordRequestForm
+# pyrefly: ignore [missing-import]
 from sqlalchemy.orm import Session
 # pyrefly: ignore [missing-import]
 from sqlalchemy import func
@@ -19,6 +21,7 @@ from database import engine, SessionLocal, Base, get_db
 import models
 import schemas
 from seed import seed_emission_factors
+import auth
 
 
 def init_db():
@@ -61,9 +64,61 @@ def serve_index():
     return {"message": "Drive-pro API is running"}
 
 
+# ==========================================
+# Auth Endpoints
+# ==========================================
+@app.post("/auth/login")
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(),
+    db: Session = Depends(get_db),
+):
+    user = db.query(models.User).filter(models.User.username == form_data.username).first()
+    if not user or not auth.verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect username or password",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    token = auth.create_access_token(data={"sub": user.username, "role": user.role})
+    return {"access_token": token, "token_type": "bearer", "role": user.role, "username": user.username}
+
+
+@app.get("/auth/me")
+def get_me(current_user: models.User = Depends(auth.get_current_user)):
+    return {"username": current_user.username, "role": current_user.role}
+
+
+@app.post("/auth/seed-user", status_code=status.HTTP_201_CREATED, include_in_schema=False)
+def seed_user(payload: dict, db: Session = Depends(get_db)):
+    """Internal seeding endpoint — creates a user if username doesn't exist yet."""
+    from fastapi import Response
+    username = payload.get("username")
+    password = payload.get("password")
+    role = payload.get("role")
+    if not username or not password or not role:
+        raise HTTPException(status_code=400, detail="username, password, and role required")
+    existing = db.query(models.User).filter(models.User.username == username).first()
+    if existing:
+        raise HTTPException(status_code=409, detail=f"User '{username}' already exists")
+    user = models.User(
+        username=username,
+        hashed_password=auth.hash_password(password),
+        role=role,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return {"id": user.id, "username": user.username, "role": user.role}
+
+
+
 # Facility Endpoints
 @app.post("/facilities", response_model=schemas.FacilityOut, status_code=status.HTTP_201_CREATED)
-def create_facility(facility: schemas.FacilityCreate, db: Session = Depends(get_db)):
+def create_facility(
+    facility: schemas.FacilityCreate,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(auth.require_employee),
+):
     db_facility = models.Facility(
         name=facility.name,
         country=facility.country,
@@ -92,6 +147,7 @@ def list_facilities(db: Session = Depends(get_db)):
 def create_activity_entry(
     entry: schemas.ActivityEntryCreate,
     db: Session = Depends(get_db),
+    _current_user: models.User = Depends(auth.require_employee),
 ):
     # 1. Verify facility exists
     facility = db.query(models.Facility).filter(models.Facility.id == entry.facility_id).first()
@@ -323,7 +379,11 @@ def get_insights(db: Session = Depends(get_db)):
 # Product LCA (PCF) Endpoints
 # ==========================================
 @app.post("/products", response_model=schemas.ProductOut, status_code=status.HTTP_201_CREATED)
-def create_product(product: schemas.ProductCreate, db: Session = Depends(get_db)):
+def create_product(
+    product: schemas.ProductCreate,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(auth.require_employee),
+):
     fac = db.query(models.Facility).filter(models.Facility.id == product.facility_id).first()
     if not fac:
         raise HTTPException(
@@ -355,6 +415,7 @@ def add_product_component(
     product_id: int,
     comp: schemas.ProductComponentCreate,
     db: Session = Depends(get_db),
+    _current_user: models.User = Depends(auth.require_employee),
 ):
     product = db.query(models.Product).filter(models.Product.id == product_id).first()
     if not product:
@@ -407,7 +468,11 @@ def get_product_footprint(product_id: int, db: Session = Depends(get_db)):
 # Supplier Engagement Endpoints
 # ==========================================
 @app.post("/suppliers", response_model=schemas.SupplierOut, status_code=status.HTTP_201_CREATED)
-def create_supplier(supplier: schemas.SupplierCreate, db: Session = Depends(get_db)):
+def create_supplier(
+    supplier: schemas.SupplierCreate,
+    db: Session = Depends(get_db),
+    _current_user: models.User = Depends(auth.require_employee),
+):
     db_supplier = models.Supplier(
         name=supplier.name,
         country=supplier.country,
@@ -467,6 +532,7 @@ def log_supplier_emissions(
     supplier_id: int,
     data: schemas.SupplierEmissionDataCreate,
     db: Session = Depends(get_db),
+    _current_user: models.User = Depends(auth.require_employee),
 ):
     supplier = db.query(models.Supplier).filter(models.Supplier.id == supplier_id).first()
     if not supplier:
