@@ -708,6 +708,48 @@
             padding: 2rem 2.5rem;
         }
 
+        /* Expandable Facility Detail Panel */
+        .facility-detail-panel {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.22s ease-out, opacity 0.2s ease-out, padding 0.22s ease-out;
+            background-color: var(--bg-hero);
+            padding: 0 2rem;
+        }
+
+        .facility-detail-panel.open {
+            max-height: 250px;
+            opacity: 1;
+            padding: 1.5rem 2rem;
+        }
+
+        .facility-detail-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .facility-detail-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .facility-detail-label {
+            font-size: 0.72rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.35rem;
+            font-weight: 500;
+        }
+
+        .facility-detail-value {
+            font-size: 0.92rem;
+            color: var(--text-primary);
+            font-weight: 400;
+        }
+
         .lineage-container {
             max-width: 760px;
         }
@@ -1331,8 +1373,31 @@
                             <input type="text" id="fac-name" placeholder="Austin Assembly Plant" required>
                         </div>
                         <div class="form-group">
-                            <label for="fac-country">Country</label>
-                            <input type="text" id="fac-country" placeholder="e.g. US, UK, DE, IN" required>
+                            <label for="fac-country">Country / Location</label>
+                            <input type="text" id="fac-country" placeholder="e.g. US, UK, DE, IN, Delhi" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="fac-address">Address</label>
+                            <input type="text" id="fac-address" placeholder="e.g. 4800 Battery Way, Austin, TX">
+                        </div>
+                        <div class="form-group">
+                            <label for="fac-type">Facility Type</label>
+                            <select id="fac-type">
+                                <option value="">Select type...</option>
+                                <option value="Manufacturing">Manufacturing</option>
+                                <option value="Distribution">Distribution</option>
+                                <option value="Office">Office</option>
+                                <option value="Warehouse">Warehouse</option>
+                                <option value="R&D">R&D</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="fac-employees">Employee Count</label>
+                            <input type="number" id="fac-employees" placeholder="e.g. 3200" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label for="fac-since">Operational Since (Year)</label>
+                            <input type="number" id="fac-since" placeholder="e.g. 2019" min="1900" max="2100">
                         </div>
                         <button type="submit" id="fac-submit-btn" class="btn-primary">Register Facility</button>
                         <div id="facility-msg" class="msg-box"></div>
@@ -2849,19 +2914,82 @@
                         maximumFractionDigits: 2
                     });
 
+                    const facMeta = facilitiesMap[item.facility_id] || {};
+                    const address = item.address || facMeta.address || 'Not specified';
+                    const facilityType = item.facility_type || facMeta.facility_type || 'Not specified';
+                    const employeeCount = (item.employee_count !== undefined && item.employee_count !== null) ? item.employee_count : ((facMeta.employee_count !== undefined && facMeta.employee_count !== null) ? facMeta.employee_count : null);
+                    const operationalSince = item.operational_since || facMeta.operational_since || 'Not specified';
+                    const empDisplay = employeeCount !== null && employeeCount !== undefined ? Number(employeeCount).toLocaleString() : 'Not specified';
+
                     const tr = document.createElement('tr');
+                    tr.className = 'clickable-row';
+                    tr.id = `facility-row-${item.facility_id}`;
+                    tr.setAttribute('onclick', `toggleFacilityDetail(${item.facility_id})`);
                     tr.innerHTML = `
-                        <td>${escapeHtml(item.facility_name)}</td>
+                        <td><span class="row-chevron">&rsaquo;</span> <strong>${escapeHtml(item.facility_name)}</strong></td>
                         <td>${escapeHtml(item.country)}</td>
                         <td class="num-col">${s1}</td>
                         <td class="num-col">${s2}</td>
                         <td class="num-col"><strong>${total}</strong></td>
                     `;
                     tbody.appendChild(tr);
+
+                    const detailTr = document.createElement('tr');
+                    detailTr.id = `facility-detail-row-${item.facility_id}`;
+                    detailTr.className = 'lineage-detail-row';
+                    detailTr.style.display = 'none';
+                    detailTr.innerHTML = `
+                        <td colspan="5">
+                            <div class="facility-detail-panel" id="facility-panel-${item.facility_id}">
+                                <div class="facility-detail-grid">
+                                    <div class="facility-detail-item">
+                                        <span class="facility-detail-label">Address</span>
+                                        <span class="facility-detail-value">${escapeHtml(address)}</span>
+                                    </div>
+                                    <div class="facility-detail-item">
+                                        <span class="facility-detail-label">Facility Type</span>
+                                        <span class="facility-detail-value">${escapeHtml(facilityType)}</span>
+                                    </div>
+                                    <div class="facility-detail-item">
+                                        <span class="facility-detail-label">Employees</span>
+                                        <span class="facility-detail-value">${escapeHtml(empDisplay)}</span>
+                                    </div>
+                                    <div class="facility-detail-item">
+                                        <span class="facility-detail-label">Operational Since</span>
+                                        <span class="facility-detail-value">${escapeHtml(operationalSince)}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(detailTr);
                 });
             } catch (err) {
                 if (errEl) errEl.textContent = `Error loading facility emissions: ${err.message}`;
                 tbody.innerHTML = '<tr><td colspan="5" style="color: var(--accent-vermillion); padding: 1.5rem 1.25rem;">Failed to load breakdown.</td></tr>';
+            }
+        }
+
+        // Toggle facility detail inline panel
+        function toggleFacilityDetail(facilityId) {
+            const row = document.getElementById(`facility-detail-row-${facilityId}`);
+            const panel = document.getElementById(`facility-panel-${facilityId}`);
+            const parentRow = document.getElementById(`facility-row-${facilityId}`);
+            if (!row || !panel) return;
+
+            const isOpen = panel.classList.contains('open');
+            if (isOpen) {
+                panel.classList.remove('open');
+                if (parentRow) parentRow.classList.remove('is-expanded');
+                setTimeout(() => {
+                    row.style.display = 'none';
+                }, 220);
+            } else {
+                row.style.display = 'table-row';
+                requestAnimationFrame(() => {
+                    panel.classList.add('open');
+                    if (parentRow) parentRow.classList.add('is-expanded');
+                });
             }
         }
 
@@ -3032,6 +3160,11 @@
             const submitBtn = document.getElementById('fac-submit-btn');
             const name = document.getElementById('fac-name').value.trim();
             const country = document.getElementById('fac-country').value.trim();
+            const address = document.getElementById('fac-address').value.trim() || null;
+            const facility_type = document.getElementById('fac-type').value || null;
+            const empVal = document.getElementById('fac-employees').value;
+            const employee_count = empVal ? parseInt(empVal, 10) : null;
+            const operational_since = document.getElementById('fac-since').value.trim() || null;
 
             msgEl.className = 'msg-box';
             msgEl.textContent = '';
@@ -3041,7 +3174,14 @@
                 const response = await fetch('/facilities', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, country })
+                    body: JSON.stringify({
+                        name,
+                        country,
+                        address,
+                        facility_type,
+                        employee_count,
+                        operational_since
+                    })
                 });
 
                 if (!response.ok) {
@@ -3054,6 +3194,10 @@
                 msgEl.textContent = `Facility "${created.name}" registered`;
                 document.getElementById('fac-name').value = '';
                 document.getElementById('fac-country').value = '';
+                document.getElementById('fac-address').value = '';
+                document.getElementById('fac-type').value = '';
+                document.getElementById('fac-employees').value = '';
+                document.getElementById('fac-since').value = '';
 
                 await fetchFacilities();
                 await fetchEmissionsByFacility();

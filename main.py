@@ -64,7 +64,14 @@ def serve_index():
 # Facility Endpoints
 @app.post("/facilities", response_model=schemas.FacilityOut, status_code=status.HTTP_201_CREATED)
 def create_facility(facility: schemas.FacilityCreate, db: Session = Depends(get_db)):
-    db_facility = models.Facility(name=facility.name, country=facility.country)
+    db_facility = models.Facility(
+        name=facility.name,
+        country=facility.country,
+        address=facility.address,
+        facility_type=facility.facility_type,
+        employee_count=facility.employee_count,
+        operational_since=facility.operational_since,
+    )
     db.add(db_facility)
     db.commit()
     db.refresh(db_facility)
@@ -218,6 +225,10 @@ def get_emissions_by_facility(db: Session = Depends(get_db)):
             "facility_id": fac.id,
             "facility_name": fac.name,
             "country": fac.country,
+            "address": fac.address,
+            "facility_type": fac.facility_type,
+            "employee_count": fac.employee_count,
+            "operational_since": fac.operational_since,
             "scope1_total": scope1_val,
             "scope2_total": scope2_val,
             "total_emissions_kg": total_val,

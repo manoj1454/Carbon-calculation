@@ -6,12 +6,20 @@ from pydantic import BaseModel, ConfigDict, Field, field_validator
 class FacilityCreate(BaseModel):
     name: str
     country: str
+    address: Optional[str] = None
+    facility_type: Optional[str] = None
+    employee_count: Optional[int] = None
+    operational_since: Optional[str] = None
 
 
 class FacilityOut(BaseModel):
     id: int
     name: str
     country: str
+    address: Optional[str] = None
+    facility_type: Optional[str] = None
+    employee_count: Optional[int] = None
+    operational_since: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -81,6 +89,10 @@ class FacilityEmissionsOut(BaseModel):
     facility_id: int
     facility_name: str
     country: str
+    address: Optional[str] = None
+    facility_type: Optional[str] = None
+    employee_count: Optional[int] = None
+    operational_since: Optional[str] = None
     scope1_total: float
     scope2_total: float
     total_emissions_kg: float

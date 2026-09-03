@@ -9,6 +9,10 @@ class Facility(Base):
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     name = Column(String, nullable=False)
     country = Column(String, nullable=False)
+    address = Column(String, nullable=True)
+    facility_type = Column(String, nullable=True)
+    employee_count = Column(Integer, nullable=True)
+    operational_since = Column(String, nullable=True)
 
     activities = relationship("ActivityEntry", back_populates="facility", cascade="all, delete-orphan")
 

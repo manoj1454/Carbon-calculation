@@ -28,11 +28,46 @@ def main():
 
     print("\n--- 1. SEEDING FACILITIES ---")
     facilities_to_add = [
-        {"name": "Gigafactory 1", "country": "US"},
-        {"name": "Riverside Distribution Center", "country": "UK"},
-        {"name": "Chennai Manufacturing Hub", "country": "IN"},
-        {"name": "Delhi Logistics Hub", "country": "Delhi"},
-        {"name": "Bengaluru Tech Campus", "country": "Bengaluru"},
+        {
+            "name": "Gigafactory 1",
+            "country": "US",
+            "address": "4800 Battery Way, Austin, TX",
+            "facility_type": "Manufacturing",
+            "employee_count": 3200,
+            "operational_since": "2019",
+        },
+        {
+            "name": "Riverside Distribution Center",
+            "country": "UK",
+            "address": "12 Dockside Road, London, UK",
+            "facility_type": "Distribution",
+            "employee_count": 450,
+            "operational_since": "2021",
+        },
+        {
+            "name": "Chennai Manufacturing Hub",
+            "country": "IN",
+            "address": "Plot 44, SIPCOT Industrial Park, Chennai",
+            "facility_type": "Manufacturing",
+            "employee_count": 1800,
+            "operational_since": "2020",
+        },
+        {
+            "name": "Delhi Logistics Hub",
+            "country": "Delhi",
+            "address": "Sector 63, Noida, Delhi NCR",
+            "facility_type": "Distribution",
+            "employee_count": 320,
+            "operational_since": "2022",
+        },
+        {
+            "name": "Bengaluru Tech Campus",
+            "country": "Bengaluru",
+            "address": "Whitefield Tech Park, Bengaluru",
+            "facility_type": "Office",
+            "employee_count": 900,
+            "operational_since": "2018",
+        },
     ]
 
     # Fetch existing facilities to avoid duplicates
@@ -55,6 +90,33 @@ def main():
 
     print("\n--- 2. SEEDING ACTIVITY ENTRIES ---")
     activity_entries = [
+        {
+            "facility_id": facility_ids.get("Gigafactory 1"),
+            "scope": 1,
+            "fuel_type": "natural_gas",
+            "geography": "US",
+            "quantity": 2500.0,
+            "unit": "m3",
+            "date": "2026-08-28",
+        },
+        {
+            "facility_id": facility_ids.get("Gigafactory 1"),
+            "scope": 1,
+            "fuel_type": "diesel",
+            "geography": "US",
+            "quantity": 3500.0,
+            "unit": "liters",
+            "date": "2026-08-30",
+        },
+        {
+            "facility_id": facility_ids.get("Gigafactory 1"),
+            "scope": 2,
+            "fuel_type": "electricity",
+            "geography": "US",
+            "quantity": 18389.6,
+            "unit": "kWh",
+            "date": "2026-09-01",
+        },
         {
             "facility_id": facility_ids.get("Riverside Distribution Center"),
             "scope": 1,
