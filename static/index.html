@@ -645,6 +645,183 @@
             text-align: right;
         }
 
+        /* Clickable Row & Lineage Audit Trail */
+        .clickable-row {
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+
+        .clickable-row:hover {
+            background-color: rgba(239, 235, 226, 0.45);
+        }
+
+        .clickable-row.is-expanded {
+            background-color: rgba(239, 235, 226, 0.7);
+        }
+
+        .row-chevron {
+            display: inline-block;
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-right: 0.55rem;
+            transition: transform 0.2s ease, color 0.2s ease;
+            width: 10px;
+            text-align: center;
+        }
+
+        .clickable-row:hover .row-chevron {
+            color: var(--accent-vermillion);
+        }
+
+        .clickable-row.is-expanded .row-chevron {
+            transform: rotate(90deg);
+            color: var(--accent-vermillion);
+        }
+
+        .lineage-detail-row td {
+            padding: 0 !important;
+            border-bottom: 1px solid var(--border-hairline);
+        }
+
+        .lineage-detail-panel {
+            overflow: hidden;
+            max-height: 0;
+            opacity: 0;
+            transition: max-height 0.22s ease-out, opacity 0.2s ease-out, padding 0.22s ease-out;
+            background-color: var(--bg-hero);
+            padding: 0 2.5rem;
+        }
+
+        .lineage-detail-panel.open {
+            max-height: 650px;
+            opacity: 1;
+            padding: 2rem 2.5rem;
+        }
+
+        .lineage-container {
+            max-width: 760px;
+        }
+
+        .lineage-header-tag {
+            font-size: 0.72rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--accent-vermillion);
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-hairline);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .lineage-flow {
+            display: flex;
+            flex-direction: column;
+            padding-left: 0.25rem;
+        }
+
+        .lineage-step {
+            display: flex;
+            position: relative;
+        }
+
+        .step-rail {
+            width: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex-shrink: 0;
+            margin-right: 1.25rem;
+        }
+
+        .step-node {
+            width: 7px;
+            height: 7px;
+            background-color: var(--accent-vermillion);
+            flex-shrink: 0;
+            margin-top: 5px;
+        }
+
+        .step-connector {
+            width: 1px;
+            flex-grow: 1;
+            background-color: var(--border-hairline);
+            margin: 5px 0;
+            min-height: 20px;
+        }
+
+        .step-arrow {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+
+        .step-body {
+            padding-bottom: 1.5rem;
+            flex-grow: 1;
+        }
+
+        .lineage-step:last-child .step-body {
+            padding-bottom: 0;
+        }
+
+        .step-title {
+            font-size: 0.73rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 500;
+            margin-bottom: 0.4rem;
+        }
+
+        .step-info {
+            font-size: 0.92rem;
+            line-height: 1.65;
+            color: var(--text-primary);
+        }
+
+        .step-info-row {
+            display: flex;
+            gap: 0.6rem;
+        }
+
+        .step-label-muted {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            min-width: 110px;
+        }
+
+        .step-value-highlight {
+            font-family: var(--font-body);
+            font-variant-numeric: tabular-nums;
+            color: var(--text-primary);
+        }
+
+        .fallback-alert {
+            color: #D4823C;
+            font-weight: 500;
+        }
+
+        .calculation-card {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.55);
+            border: 1px solid var(--border-hairline);
+            padding: 0.5rem 1rem;
+            margin-top: 0.25rem;
+            font-variant-numeric: tabular-nums;
+            font-size: 0.95rem;
+        }
+
+        .status-pill-calculated {
+            display: inline-block;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+
         code {
             font-family: var(--font-body);
             color: var(--text-muted);
@@ -974,7 +1151,7 @@
                         </svg>
                         <h2 class="section-title">Recent Activity Entries</h2>
                     </div>
-                    <p class="section-desc" style="margin-bottom: 0; padding-top: 0.25rem;">Chronological log of verified operational activity records.</p>
+                    <p class="section-desc" style="margin-bottom: 0; padding-top: 0.25rem;">Chronological log of verified operational activity records. Click any row to expand its audit calculation lineage.</p>
                 </div>
                 <button id="export-csv-btn" class="btn-secondary">
                     <svg style="width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
@@ -1309,6 +1486,7 @@
         let facilitiesMap = {};
         let productsMap = {};
         let suppliersMap = {};
+        let emissionFactorsList = []; // Kept in memory for audit trail lineage
         let chartInstance = null;
         let emissionsTarget = 25.0; // In-memory JS variable for target (tCO2e)
         let currentTotalTco2e = 0.0; // Current total emissions (tCO2e)
@@ -1609,6 +1787,93 @@
             }
         }
 
+        // 3b. Fetch Emission Factors once on page load (for Audit Trail lineage)
+        async function fetchEmissionFactors() {
+            try {
+                const response = await fetch('/emission-factors');
+                if (response.ok) {
+                    emissionFactorsList = await response.json();
+                }
+            } catch (err) {
+                console.error('Failed to load emission factors:', err);
+            }
+        }
+
+        // Helper: match factor and identify regional fallback
+        function findFactorForEntry(entry) {
+            if (!emissionFactorsList || emissionFactorsList.length === 0) {
+                const calcVal = entry.quantity ? (entry.emissions_kg / entry.quantity).toFixed(4) : 0;
+                return {
+                    factorValue: Number(calcVal),
+                    geographyText: entry.geography || 'Global',
+                    isFallback: false
+                };
+            }
+
+            const fuelNorm = (entry.fuel_type || '').trim().toLowerCase();
+            const geoNorm = (entry.geography || '').trim().toLowerCase();
+
+            // Priority 1: Match fuel_type + scope + exact geography
+            const exact = emissionFactorsList.find(f =>
+                f.fuel_type.toLowerCase() === fuelNorm &&
+                f.scope === entry.scope &&
+                f.geography.toLowerCase() === geoNorm
+            );
+
+            if (exact) {
+                return {
+                    factorValue: exact.value,
+                    geographyText: exact.geography,
+                    isFallback: false
+                };
+            }
+
+            // Priority 2: Fallback to Global geography
+            const fallback = emissionFactorsList.find(f =>
+                f.fuel_type.toLowerCase() === fuelNorm &&
+                f.scope === entry.scope &&
+                f.geography.toLowerCase() === 'global'
+            );
+
+            if (fallback) {
+                return {
+                    factorValue: fallback.value,
+                    geographyText: 'Global — regional factor not found, fallback applied',
+                    isFallback: true
+                };
+            }
+
+            const calcVal = entry.quantity ? (entry.emissions_kg / entry.quantity).toFixed(4) : 0;
+            return {
+                factorValue: Number(calcVal),
+                geographyText: entry.geography || 'Global',
+                isFallback: false
+            };
+        }
+
+        // Toggle audit trail lineage panel with smooth height transition
+        function toggleLineage(entryId) {
+            const row = document.getElementById(`lineage-row-${entryId}`);
+            const panel = document.getElementById(`lineage-panel-${entryId}`);
+            const parentRow = document.getElementById(`activity-row-${entryId}`);
+            if (!row || !panel) return;
+
+            const isOpen = panel.classList.contains('open');
+            if (isOpen) {
+                panel.classList.remove('open');
+                if (parentRow) parentRow.classList.remove('is-expanded');
+                setTimeout(() => {
+                    row.style.display = 'none';
+                }, 220);
+            } else {
+                row.style.display = 'table-row';
+                requestAnimationFrame(() => {
+                    panel.classList.add('open');
+                    if (parentRow) parentRow.classList.add('is-expanded');
+                });
+            }
+        }
+
         // 4. Fetch Recent Entries Table (GET /activity-entries)
         async function fetchRecentEntries() {
             const errEl = document.getElementById('entries-error');
@@ -1618,6 +1883,10 @@
 
                 if (Object.keys(facilitiesMap).length === 0) {
                     await fetchFacilities();
+                }
+
+                if (emissionFactorsList.length === 0) {
+                    await fetchEmissionFactors();
                 }
 
                 const response = await fetch('/activity-entries');
@@ -1648,9 +1917,20 @@
                         maximumFractionDigits: 2
                     });
 
+                    const factorInfo = findFactorForEntry(entry);
+                    const factorVal = factorInfo.factorValue;
+                    const geoText = factorInfo.geographyText;
+                    const isFb = factorInfo.isFallback;
+
+                    // Main table row (clickable)
                     const tr = document.createElement('tr');
+                    tr.id = `activity-row-${entry.id}`;
+                    tr.className = 'clickable-row';
+                    tr.setAttribute('title', 'Click to view calculation lineage audit trail');
+                    tr.onclick = () => toggleLineage(entry.id);
+
                     tr.innerHTML = `
-                        <td>${escapeHtml(facilityDisplayName)}</td>
+                        <td><span class="row-chevron">&rsaquo;</span> <strong>${escapeHtml(facilityDisplayName)}</strong></td>
                         <td><span class="badge ${badgeClass}">Scope ${entry.scope}</span></td>
                         <td><code>${escapeHtml(entry.fuel_type)}</code></td>
                         <td class="num-col">${Number(entry.quantity).toLocaleString()}</td>
@@ -1659,6 +1939,112 @@
                         <td style="color: var(--text-muted); text-align: right;">${escapeHtml(entry.date || '')}</td>
                     `;
                     tbody.appendChild(tr);
+
+                    // Inline Audit Trail Detail Row
+                    const detailTr = document.createElement('tr');
+                    detailTr.id = `lineage-row-${entry.id}`;
+                    detailTr.className = 'lineage-detail-row';
+                    detailTr.style.display = 'none';
+
+                    detailTr.innerHTML = `
+                        <td colspan="7">
+                            <div class="lineage-detail-panel" id="lineage-panel-${entry.id}">
+                                <div class="lineage-container">
+                                    <div class="lineage-header-tag">
+                                        <span>Calculation Lineage &bull; Audit Trail</span>
+                                        <span>Record #${entry.id}</span>
+                                    </div>
+                                    <div class="lineage-flow">
+                                        <!-- Step 1: Source Activity -->
+                                        <div class="lineage-step">
+                                            <div class="step-rail">
+                                                <div class="step-node"></div>
+                                                <div class="step-connector"></div>
+                                                <div class="step-arrow">&darr;</div>
+                                            </div>
+                                            <div class="step-body">
+                                                <div class="step-title">Source Activity</div>
+                                                <div class="step-info">
+                                                    <div class="step-info-row">
+                                                        <span class="step-label-muted">Facility:</span>
+                                                        <span class="step-value-highlight">${escapeHtml(facilityDisplayName)}</span>
+                                                    </div>
+                                                    <div class="step-info-row">
+                                                        <span class="step-label-muted">Logged:</span>
+                                                        <span class="step-value-highlight">${escapeHtml(entry.date || 'N/A')}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Step 2: Emission Factor Matched -->
+                                        <div class="lineage-step">
+                                            <div class="step-rail">
+                                                <div class="step-node"></div>
+                                                <div class="step-connector"></div>
+                                                <div class="step-arrow">&darr;</div>
+                                            </div>
+                                            <div class="step-body">
+                                                <div class="step-title">Emission Factor Matched</div>
+                                                <div class="step-info">
+                                                    <div class="step-info-row">
+                                                        <span class="step-label-muted">Fuel/Activity:</span>
+                                                        <span class="step-value-highlight"><code>${escapeHtml(entry.fuel_type)}</code></span>
+                                                    </div>
+                                                    <div class="step-info-row">
+                                                        <span class="step-label-muted">Geography:</span>
+                                                        <span class="step-value-highlight ${isFb ? 'fallback-alert' : ''}">${escapeHtml(geoText)}</span>
+                                                    </div>
+                                                    <div class="step-info-row">
+                                                        <span class="step-label-muted">Factor value:</span>
+                                                        <span class="step-value-highlight">${factorVal} kg CO₂e/${escapeHtml(entry.unit)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Step 3: Calculation -->
+                                        <div class="lineage-step">
+                                            <div class="step-rail">
+                                                <div class="step-node"></div>
+                                                <div class="step-connector"></div>
+                                                <div class="step-arrow">&darr;</div>
+                                            </div>
+                                            <div class="step-body">
+                                                <div class="step-title">Calculation</div>
+                                                <div class="step-info">
+                                                    <div class="calculation-card">
+                                                        ${Number(entry.quantity).toLocaleString()} ${escapeHtml(entry.unit)} &times; ${factorVal} = <strong>${emKg} kg CO₂e</strong>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Step 4: Result -->
+                                        <div class="lineage-step">
+                                            <div class="step-rail">
+                                                <div class="step-node"></div>
+                                            </div>
+                                            <div class="step-body">
+                                                <div class="step-title">Result</div>
+                                                <div class="step-info">
+                                                    <div class="step-info-row">
+                                                        <span class="step-label-muted">Scope ${entry.scope} emissions:</span>
+                                                        <span class="step-value-highlight" style="color: var(--accent-vermillion); font-weight: 600;">${emKg} kg CO₂e</span>
+                                                    </div>
+                                                    <div class="step-info-row">
+                                                        <span class="step-label-muted">Status:</span>
+                                                        <span class="status-pill-calculated">Calculated &mdash; awaiting review</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    `;
+                    tbody.appendChild(detailTr);
                 });
             } catch (err) {
                 recentEntriesData = [];
@@ -1909,6 +2295,7 @@
         // Refresh all dependent widgets
         async function refreshAllData() {
             await Promise.allSettled([
+                fetchEmissionFactors(),
                 fetchEmissionsSummary(),
                 fetchRecentEntries(),
                 fetchEmissionsByFacility(),
@@ -2255,9 +2642,11 @@
                 exportBtn.addEventListener('click', exportEntriesToCSV);
             }
 
+            await fetchEmissionFactors();
             await fetchFacilities();
             await refreshAllData();
         });
+
     </script>
 </body>
 </html>
