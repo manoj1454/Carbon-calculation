@@ -13,6 +13,9 @@
     <!-- Leaflet.js via CDN -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- D3.js & d3-sankey via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+    <script src="https://cdn.jsdelivr.net/npm/d3-sankey@0.12"></script>
     <style>
         :root {
             /* Palette: Japanese Editorial Minimalism (Ma) Refined */
@@ -750,6 +753,59 @@
             font-weight: 400;
         }
 
+        /* Sankey Diagram Section */
+        .sankey-container-wrap {
+            border: 1px solid var(--border-hairline);
+            background: transparent;
+            position: relative;
+            padding: 1.5rem 1rem;
+            margin: 2rem 0;
+            overflow-x: auto;
+        }
+
+        #sankey-chart {
+            width: 100%;
+            min-width: 680px;
+            height: 480px;
+            position: relative;
+        }
+
+        .sankey-node rect {
+            cursor: default;
+        }
+
+        .sankey-link {
+            transition: stroke-opacity 0.2s ease;
+            cursor: pointer;
+        }
+
+        .sankey-label {
+            font-family: 'Noto Sans', -apple-system, sans-serif;
+            user-select: none;
+        }
+
+        .sankey-label-sub {
+            font-family: 'Noto Sans', -apple-system, sans-serif;
+            font-size: 10px;
+            user-select: none;
+        }
+
+        .sankey-tooltip {
+            position: absolute;
+            pointer-events: none;
+            background: #1A1A1A;
+            color: #F7F5F0;
+            padding: 8px 12px;
+            font-size: 0.8rem;
+            font-family: 'Noto Sans', -apple-system, sans-serif;
+            border-radius: 0;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+            opacity: 0;
+            transition: opacity 0.15s ease;
+            z-index: 50;
+            white-space: nowrap;
+        }
+
         .lineage-container {
             max-width: 760px;
         }
@@ -1286,6 +1342,7 @@
             <a href="#overview" class="sidebar-link active">Overview</a>
             <a href="#data-ingestion" class="sidebar-link">Data Ingestion</a>
             <a href="#emissions-distribution" class="sidebar-link">Emissions Distribution</a>
+            <a href="#emissions-flow" class="sidebar-link">Emissions Flow</a>
             <a href="#recent-activity" class="sidebar-link">Recent Activity</a>
             <a href="#facility-summary" class="sidebar-link">Facility Summary</a>
             <a href="#emissions-map-section" class="sidebar-link">Emissions Map</a>
@@ -1489,6 +1546,24 @@
             <div id="chart-error" class="error-text"></div>
             <div class="chart-container">
                 <canvas id="emissionsChart"></canvas>
+            </div>
+        </section>
+
+        <hr class="hairline-divider">
+
+        <!-- Section: Emissions Flow (Sankey Diagram) -->
+        <section class="page-section" id="emissions-flow">
+            <div class="section-header-wrap">
+                <svg class="section-icon" viewBox="0 0 24 24">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                </svg>
+                <h2 class="section-title">Emissions Flow</h2>
+            </div>
+            <p class="section-desc">How emissions trace from fuel source through scope to facility.</p>
+            <div id="sankey-error" class="error-text"></div>
+            <div class="sankey-container-wrap">
+                <div id="sankey-chart"></div>
+                <div id="sankey-tooltip" class="sankey-tooltip"></div>
             </div>
         </section>
 
@@ -2531,6 +2606,236 @@
             }
         }
 
+        // 2b. Sankey Diagram Management - Emissions Flow
+        async function updateSankeyDiagram() {
+            const container = document.getElementById('sankey-chart');
+            const errEl = document.getElementById('sankey-error');
+            const tooltip = document.getElementById('sankey-tooltip');
+            if (!container || typeof d3 === 'undefined' || typeof d3.sankey === 'undefined') return;
+
+            try {
+                if (errEl) errEl.textContent = '';
+                const [actRes, facRes] = await Promise.all([
+                    fetch('/activity-entries'),
+                    fetch('/facilities')
+                ]);
+
+                if (!actRes.ok || !facRes.ok) {
+                    throw new Error('Failed to load activity or facility data for flow diagram.');
+                }
+
+                const entries = await actRes.json();
+                const facilities = await facRes.json();
+
+                if (!entries || entries.length === 0) {
+                    container.innerHTML = '<div style="color: var(--text-muted); padding: 4rem 2rem; text-align: center;">No activity entries logged yet to trace emissions flow.</div>';
+                    return;
+                }
+
+                const fMap = {};
+                facilities.forEach(f => { fMap[f.id] = f.name; });
+
+                const hop1Map = {}; // Fuel -> Scope
+                const hop2Map = {}; // Scope -> Facility
+                const nodeMap = new Map();
+
+                function formatFuelName(fuel) {
+                    if (!fuel) return 'Unknown';
+                    const norm = String(fuel).toLowerCase().replace(/_/g, ' ');
+                    return norm.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+                }
+
+                entries.forEach(e => {
+                    const kg = Number(e.emissions_kg || 0);
+                    if (kg <= 0) return;
+
+                    const fuelKey = "fuel_" + String(e.fuel_type || 'other').toLowerCase();
+                    const scopeKey = "scope_" + e.scope;
+                    const facKey = "facility_" + e.facility_id;
+                    const facName = fMap[e.facility_id] || ("Facility " + e.facility_id);
+
+                    if (!nodeMap.has(fuelKey)) {
+                        nodeMap.set(fuelKey, { id: fuelKey, name: formatFuelName(e.fuel_type), type: 'fuel' });
+                    }
+                    if (!nodeMap.has(scopeKey)) {
+                        nodeMap.set(scopeKey, { id: scopeKey, name: `Scope ${e.scope}`, type: 'scope' });
+                    }
+                    if (!nodeMap.has(facKey)) {
+                        nodeMap.set(facKey, { id: facKey, name: facName, type: 'facility' });
+                    }
+
+                    // Hop 1: Fuel -> Scope
+                    const k1 = `${fuelKey}->${scopeKey}`;
+                    if (!hop1Map[k1]) {
+                        hop1Map[k1] = { source: fuelKey, target: scopeKey, value: 0, scope: Number(e.scope) };
+                    }
+                    hop1Map[k1].value += kg;
+
+                    // Hop 2: Scope -> Facility
+                    const k2 = `${scopeKey}->${facKey}`;
+                    if (!hop2Map[k2]) {
+                        hop2Map[k2] = { source: scopeKey, target: facKey, value: 0, scope: Number(e.scope) };
+                    }
+                    hop2Map[k2].value += kg;
+                });
+
+                const nodes = Array.from(nodeMap.values());
+                const links = [
+                    ...Object.values(hop1Map),
+                    ...Object.values(hop2Map)
+                ];
+
+                if (nodes.length === 0 || links.length === 0) {
+                    container.innerHTML = '<div style="color: var(--text-muted); padding: 4rem 2rem; text-align: center;">Insufficient activity flows to plot.</div>';
+                    return;
+                }
+
+                container.innerHTML = '';
+
+                const width = Math.max(700, container.clientWidth || 920);
+                const height = 480;
+
+                const svg = d3.select(container)
+                    .append('svg')
+                    .attr('width', '100%')
+                    .attr('height', height)
+                    .attr('viewBox', `0 0 ${width} ${height}`)
+                    .style('overflow', 'visible');
+
+                const sankeyGenerator = d3.sankey()
+                    .nodeId(d => d.id)
+                    .nodeWidth(14)
+                    .nodePadding(22)
+                    .extent([[140, 32], [width - 180, height - 32]]);
+
+                const graph = sankeyGenerator({
+                    nodes: nodes.map(d => Object.assign({}, d)),
+                    links: links.map(d => Object.assign({}, d))
+                });
+
+                // Draw Links
+                svg.append('g')
+                    .attr('fill', 'none')
+                    .selectAll('path')
+                    .data(graph.links)
+                    .enter()
+                    .append('path')
+                    .attr('class', 'sankey-link')
+                    .attr('d', d3.sankeyLinkHorizontal())
+                    .attr('stroke', d => d.scope === 1 ? '#C0392B' : '#4A9B8E')
+                    .attr('stroke-width', d => Math.max(1.5, d.width))
+                    .attr('stroke-opacity', 0.4)
+                    .on('mouseover', function(event, d) {
+                        d3.select(this).attr('stroke-opacity', 0.85);
+                        if (tooltip) {
+                            const valKg = d.value;
+                            const valTons = (valKg / 1000).toFixed(3);
+                            const scopeLabel = d.scope === 1 
+                                ? '<span style="color: #E74C3C; font-weight: 600;">Scope 1</span>' 
+                                : '<span style="color: #4A9B8E; font-weight: 600;">Scope 2</span>';
+
+                            tooltip.innerHTML = `
+                                <div style="font-weight: 500; font-family: 'Zen Old Mincho', serif; font-size: 0.95rem; margin-bottom: 3px;">${escapeHtml(d.source.name)} &rarr; ${escapeHtml(d.target.name)}</div>
+                                <div style="font-size: 0.78rem; color: #B5AFA5;">Flow (${scopeLabel}): <strong style="color: #FFFFFF; font-variant-numeric: tabular-nums;">${valKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} kg CO₂e</strong> (${valTons} tCO₂e)</div>
+                            `;
+                            tooltip.style.opacity = '1';
+                        }
+                    })
+                    .on('mousemove', function(event) {
+                        if (tooltip) {
+                            const rect = container.getBoundingClientRect();
+                            const x = event.clientX - rect.left + 14;
+                            const y = event.clientY - rect.top + 14;
+                            tooltip.style.left = `${x}px`;
+                            tooltip.style.top = `${y}px`;
+                        }
+                    })
+                    .on('mouseout', function() {
+                        d3.select(this).attr('stroke-opacity', 0.4);
+                        if (tooltip) tooltip.style.opacity = '0';
+                    });
+
+                // Draw Nodes
+                const nodeGroup = svg.append('g')
+                    .selectAll('g')
+                    .data(graph.nodes)
+                    .enter()
+                    .append('g')
+                    .attr('class', 'sankey-node');
+
+                nodeGroup.append('rect')
+                    .attr('x', d => d.x0)
+                    .attr('y', d => d.y0)
+                    .attr('height', d => Math.max(2, d.y1 - d.y0))
+                    .attr('width', d => d.x1 - d.x0)
+                    .attr('fill', d => {
+                        if (d.type === 'scope') {
+                            return d.id === 'scope_1' ? 'rgba(192, 57, 43, 0.15)' : 'rgba(74, 155, 142, 0.15)';
+                        }
+                        return 'rgba(192, 57, 43, 0.05)';
+                    })
+                    .attr('stroke', d => {
+                        if (d.type === 'scope') {
+                            return d.id === 'scope_1' ? '#C0392B' : '#4A9B8E';
+                        }
+                        return '#C0392B';
+                    })
+                    .attr('stroke-width', 1.5);
+
+                // Node primary label
+                nodeGroup.append('text')
+                    .attr('class', 'sankey-label')
+                    .attr('x', d => {
+                        if (d.type === 'fuel') return d.x0 - 10;
+                        if (d.type === 'facility') return d.x1 + 10;
+                        return (d.x0 + d.x1) / 2;
+                    })
+                    .attr('y', d => {
+                        if (d.type === 'scope') return d.y0 - 10;
+                        return (d.y0 + d.y1) / 2 - 4;
+                    })
+                    .attr('text-anchor', d => {
+                        if (d.type === 'fuel') return 'end';
+                        if (d.type === 'facility') return 'start';
+                        return 'middle';
+                    })
+                    .attr('dominant-baseline', d => d.type === 'scope' ? 'baseline' : 'middle')
+                    .attr('font-size', '12px')
+                    .attr('font-weight', d => d.type === 'scope' ? '600' : '400')
+                    .attr('fill', d => d.type === 'scope' ? (d.id === 'scope_1' ? '#C0392B' : '#4A9B8E') : '#1A1A1A')
+                    .text(d => d.name);
+
+                // Node sub-label with emissions quantity
+                nodeGroup.append('text')
+                    .attr('class', 'sankey-label-sub')
+                    .attr('x', d => {
+                        if (d.type === 'fuel') return d.x0 - 10;
+                        if (d.type === 'facility') return d.x1 + 10;
+                        return (d.x0 + d.x1) / 2;
+                    })
+                    .attr('y', d => {
+                        if (d.type === 'scope') return d.y0 + (d.y1 - d.y0) / 2;
+                        return (d.y0 + d.y1) / 2 + 10;
+                    })
+                    .attr('text-anchor', d => {
+                        if (d.type === 'fuel') return 'end';
+                        if (d.type === 'facility') return 'start';
+                        return 'middle';
+                    })
+                    .attr('dominant-baseline', 'middle')
+                    .attr('font-size', '10px')
+                    .attr('fill', '#8A8580')
+                    .text(d => {
+                        const val = d.value || 0;
+                        return val >= 1000 ? `${(val / 1000).toFixed(1)}k kg` : `${Math.round(val)} kg`;
+                    });
+
+            } catch (err) {
+                console.error('Sankey rendering error:', err);
+                if (errEl) errEl.textContent = `Failed to render emissions flow: ${err.message}`;
+            }
+        }
+
         // 3. Load Facilities for Select and Mapping
         async function fetchFacilities() {
             const selectAct = document.getElementById('act-facility');
@@ -3146,6 +3451,7 @@
                 fetchEmissionsSummary(),
                 fetchRecentEntries(),
                 fetchEmissionsByFacility(),
+                updateSankeyDiagram(),
                 fetchInsights(),
                 fetchProductsAndFootprints(),
                 fetchSupplierScorecards(),
@@ -3521,6 +3827,16 @@
             initMap();
             await updateEmissionsMap();
             updateScenarioPlanning();
+
+            // Resize listener for responsive Sankey redraw
+            let resizeTimer;
+            window.addEventListener('resize', () => {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(() => {
+                    updateSankeyDiagram();
+                    if (mapInstance) mapInstance.invalidateSize();
+                }, 180);
+            });
         });
 
     </script>
