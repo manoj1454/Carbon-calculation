@@ -187,4 +187,3 @@ class SupplierScorecardOut(BaseModel):
     status: str
     total_reported_kg: float
     data_completeness: str
-

@@ -10,6 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500;600&family=Shippori+Mincho:wght@400;500;600;700&family=Zen+Old+Mincho:wght@400;500;700&display=swap" rel="stylesheet">
     <!-- Chart.js via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Leaflet.js via CDN -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <style>
         :root {
             /* Palette: Japanese Editorial Minimalism (Ma) Refined */
@@ -821,6 +824,89 @@
             color: var(--text-muted);
         }
 
+        /* Global Emissions Map */
+        .map-wrapper {
+            position: relative;
+            border: 1px solid var(--border-hairline);
+            background-color: var(--bg-hero);
+            overflow: hidden;
+        }
+
+        #emissions-map {
+            height: 420px;
+            width: 100%;
+            background-color: var(--bg-canvas);
+            border-radius: 0 !important;
+        }
+
+        .map-legend {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            z-index: 500;
+            background: rgba(251, 249, 245, 0.94);
+            backdrop-filter: blur(4px);
+            border: 1px solid var(--border-hairline);
+            padding: 0.65rem 0.95rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.4rem;
+            font-size: 0.78rem;
+            color: var(--text-primary);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 0.55rem;
+        }
+
+        .legend-dot {
+            display: inline-block;
+            border-radius: 50% !important;
+            flex-shrink: 0;
+        }
+
+        .legend-facility {
+            width: 11px;
+            height: 11px;
+            background-color: var(--accent-vermillion);
+        }
+
+        .legend-supplier {
+            width: 9px;
+            height: 9px;
+            background-color: #4A9B8E;
+        }
+
+        /* Leaflet popup overrides */
+        .leaflet-popup-content-wrapper {
+            background: #FBF9F5 !important;
+            border: 1px solid #DDD8CF !important;
+            border-radius: 0 !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+            color: #1A1A1A !important;
+            font-family: 'Noto Sans', -apple-system, sans-serif !important;
+            padding: 2px !important;
+        }
+
+        .leaflet-popup-content {
+            margin: 8px 10px !important;
+            line-height: 1.5 !important;
+        }
+
+        .leaflet-popup-tip {
+            background: #FBF9F5 !important;
+            border: 1px solid #DDD8CF !important;
+        }
+
+        .leaflet-container {
+            font-family: 'Noto Sans', -apple-system, sans-serif !important;
+            background: #F7F5F0 !important;
+        }
+
+
 
         code {
             font-family: var(--font-body);
@@ -957,6 +1043,7 @@
             <a href="#emissions-distribution" class="sidebar-link">Emissions Distribution</a>
             <a href="#recent-activity" class="sidebar-link">Recent Activity</a>
             <a href="#facility-summary" class="sidebar-link">Facility Summary</a>
+            <a href="#emissions-map-section" class="sidebar-link">Emissions Map</a>
             <a href="#product-footprint" class="sidebar-link">Product Footprint (PCF)</a>
             <a href="#supplier-engagement" class="sidebar-link">Supplier Engagement</a>
             <a href="#compliance-readiness" class="sidebar-link">Compliance Readiness</a>
@@ -1217,6 +1304,35 @@
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </section>
+
+        <hr class="hairline-divider">
+
+        <!-- Section: Global Emissions Map -->
+        <section class="page-section" id="emissions-map-section">
+            <div class="section-header-wrap">
+                <svg class="section-icon" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="2" y1="12" x2="22" y2="12"></line>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+                </svg>
+                <h2 class="section-title">Global Emissions Map</h2>
+            </div>
+            <p class="section-desc">Facility and supplier emissions hotspots by geography.</p>
+
+            <div class="map-wrapper">
+                <div id="emissions-map" style="height: 420px; border-radius: 0;"></div>
+                <div class="map-legend">
+                    <div class="legend-item">
+                        <span class="legend-dot legend-facility"></span>
+                        <span>Facility (size = emissions)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot legend-supplier"></span>
+                        <span>Supplier</span>
+                    </div>
+                </div>
             </div>
         </section>
 
@@ -1488,10 +1604,158 @@
         let suppliersMap = {};
         let emissionFactorsList = []; // Kept in memory for audit trail lineage
         let chartInstance = null;
+        let mapInstance = null;
+        let facilityMarkersLayer = null;
+        let supplierMarkersLayer = null;
         let emissionsTarget = 25.0; // In-memory JS variable for target (tCO2e)
         let currentTotalTco2e = 0.0; // Current total emissions (tCO2e)
         let previousTotalTco2e = null; // Stored for smooth hero number tick-up animation
         let recentEntriesData = []; // Cached array of fetched activity entries for CSV export
+
+        // Hardcoded country coordinates lookup for Global Emissions Map
+        const COUNTRY_COORDINATES = {
+            "US": [39.8, -98.6],
+            "USA": [39.8, -98.6],
+            "United States": [39.8, -98.6],
+            "UK": [55.4, -3.4],
+            "GB": [55.4, -3.4],
+            "United Kingdom": [55.4, -3.4],
+            "IN": [20.6, 78.9],
+            "India": [20.6, 78.9],
+            "DE": [51.2, 10.4],
+            "Germany": [51.2, 10.4],
+            "China": [35.9, 104.2],
+            "CN": [35.9, 104.2],
+            "Singapore": [1.35, 103.8],
+            "SG": [1.35, 103.8],
+            "Japan": [36.2, 138.3],
+            "JP": [36.2, 138.3],
+            "France": [46.6, 2.2],
+            "FR": [46.6, 2.2],
+            "Global": [20.0, 0.0]
+        };
+
+        // Initialize Leaflet map with CartoDB Positron light tile layer
+        function initMap() {
+            const mapContainer = document.getElementById('emissions-map');
+            if (!mapContainer || mapInstance) return;
+
+            mapInstance = L.map('emissions-map', {
+                center: [28, 15],
+                zoom: 2,
+                minZoom: 1,
+                maxZoom: 11,
+                scrollWheelZoom: false
+            });
+
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 19
+            }).addTo(mapInstance);
+
+            facilityMarkersLayer = L.layerGroup().addTo(mapInstance);
+            supplierMarkersLayer = L.layerGroup().addTo(mapInstance);
+        }
+
+        // Update map markers from facility and supplier data
+        async function updateEmissionsMap() {
+            if (!mapInstance) {
+                initMap();
+            }
+            if (!mapInstance) return;
+
+            setTimeout(() => {
+                if (mapInstance) mapInstance.invalidateSize();
+            }, 120);
+
+            facilityMarkersLayer.clearLayers();
+            supplierMarkersLayer.clearLayers();
+
+            // 1. Plot Operational Facilities (circle markers, colored vermillion, radius scaled by emissions)
+            try {
+                const facRes = await fetch('/emissions/by-facility');
+                if (facRes.ok) {
+                    const facData = await facRes.json();
+                    const maxEm = Math.max(...facData.map(f => f.total_emissions_kg || 0), 1);
+
+                    facData.forEach(fac => {
+                        const countryKey = (fac.country || '').trim();
+                        const coords = COUNTRY_COORDINATES[countryKey] || COUNTRY_COORDINATES[countryKey.toUpperCase()];
+                        if (coords) {
+                            const totalKg = Number(fac.total_emissions_kg || 0);
+                            const radius = Math.max(9, Math.min(28, 9 + Math.round((totalKg / maxEm) * 16)));
+
+                            const marker = L.circleMarker(coords, {
+                                radius: radius,
+                                fillColor: '#C0392B',
+                                color: '#FFFFFF',
+                                weight: 1.5,
+                                opacity: 0.9,
+                                fillOpacity: 0.65
+                            });
+
+                            const popupHtml = `
+                                <div style="padding: 6px 8px;">
+                                    <div style="font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: #C0392B; font-weight: 600; margin-bottom: 2px;">Operational Facility</div>
+                                    <div style="font-family: 'Zen Old Mincho', serif; font-size: 1.05rem; font-weight: 500; color: #1A1A1A; margin-bottom: 4px;">${escapeHtml(fac.facility_name)}</div>
+                                    <div style="font-size: 0.85rem; color: #8A8580; margin-bottom: 2px;">Country: <strong style="color: #1A1A1A;">${escapeHtml(fac.country)}</strong></div>
+                                    <div style="font-size: 0.85rem; color: #8A8580;">Total Emissions: <strong style="color: #C0392B; font-variant-numeric: tabular-nums;">${totalKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} kg CO₂e</strong></div>
+                                    <div style="font-size: 0.75rem; color: #8A8580; margin-top: 2px;">Scope 1: ${Number(fac.scope1_total || 0).toLocaleString()} kg | Scope 2: ${Number(fac.scope2_total || 0).toLocaleString()} kg</div>
+                                </div>
+                            `;
+                            marker.bindPopup(popupHtml);
+                            facilityMarkersLayer.addLayer(marker);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to load facility map markers', e);
+            }
+
+            // 2. Plot Suppliers (circle markers, colored teal/grey, smaller fixed radius)
+            try {
+                const suppRes = await fetch('/suppliers/scorecards');
+                if (suppRes.ok) {
+                    const suppData = await suppRes.json();
+                    const countryCount = {};
+
+                    suppData.forEach(supp => {
+                        const countryKey = (supp.country || '').trim();
+                        const baseCoords = COUNTRY_COORDINATES[countryKey] || COUNTRY_COORDINATES[countryKey.toUpperCase()];
+                        if (baseCoords) {
+                            countryCount[countryKey] = (countryCount[countryKey] || 0) + 1;
+                            const offset = (countryCount[countryKey] - 1) * 1.5;
+                            const coords = [baseCoords[0] + offset * 0.6, baseCoords[1] + offset * 1.2];
+
+                            const totalReported = Number(supp.total_reported_kg || 0);
+                            const marker = L.circleMarker(coords, {
+                                radius: 7,
+                                fillColor: '#4A9B8E',
+                                color: '#FFFFFF',
+                                weight: 1.5,
+                                opacity: 0.9,
+                                fillOpacity: 0.75
+                            });
+
+                            const popupHtml = `
+                                <div style="padding: 6px 8px;">
+                                    <div style="font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: #4A9B8E; font-weight: 600; margin-bottom: 2px;">Supplier Disclosure</div>
+                                    <div style="font-family: 'Zen Old Mincho', serif; font-size: 1.05rem; font-weight: 500; color: #1A1A1A; margin-bottom: 4px;">${escapeHtml(supp.name)}</div>
+                                    <div style="font-size: 0.85rem; color: #8A8580; margin-bottom: 2px;">Category: <strong style="color: #1A1A1A;">${escapeHtml(supp.category)}</strong> (${escapeHtml(supp.country)})</div>
+                                    <div style="font-size: 0.85rem; color: #8A8580; margin-bottom: 2px;">Status: <strong style="color: #1A1A1A;">${escapeHtml(supp.status)}</strong> (${escapeHtml(supp.data_completeness)})</div>
+                                    <div style="font-size: 0.85rem; color: #8A8580;">Reported: <strong style="color: #4A9B8E; font-variant-numeric: tabular-nums;">${totalReported.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} kg CO₂e</strong></div>
+                                </div>
+                            `;
+                            marker.bindPopup(popupHtml);
+                            supplierMarkersLayer.addLayer(marker);
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error('Failed to load supplier map markers', e);
+            }
+        }
 
         // Hardcoded reference emission factors for PCF component selection
         const MATERIAL_EMISSION_FACTORS = {
@@ -1549,7 +1813,14 @@
                     links.forEach(l => l.classList.remove('active'));
                     link.classList.add('active');
                     closeSidebar();
+                    if (mapInstance) {
+                        setTimeout(() => mapInstance.invalidateSize(), 250);
+                    }
                 });
+            });
+
+            window.addEventListener('resize', () => {
+                if (mapInstance) mapInstance.invalidateSize();
             });
         }
 
@@ -2301,7 +2572,8 @@
                 fetchEmissionsByFacility(),
                 fetchInsights(),
                 fetchProductsAndFootprints(),
-                fetchSupplierScorecards()
+                fetchSupplierScorecards(),
+                updateEmissionsMap()
             ]);
         }
 
@@ -2337,6 +2609,7 @@
 
                 await fetchFacilities();
                 await fetchEmissionsByFacility();
+                await updateEmissionsMap();
             } catch (err) {
                 msgEl.className = 'msg-box msg-error';
                 msgEl.textContent = `Failed to add facility: ${err.message}`;
@@ -2553,6 +2826,7 @@
                 document.getElementById('supp-country').value = '';
 
                 await fetchSupplierScorecards();
+                await updateEmissionsMap();
             } catch (err) {
                 msgEl.className = 'msg-box msg-error';
                 msgEl.textContent = `Error: ${err.message}`;
@@ -2612,6 +2886,7 @@
                 document.getElementById('supp-em-s3').value = '';
 
                 await fetchSupplierScorecards();
+                await updateEmissionsMap();
             } catch (err) {
                 msgEl.className = 'msg-box msg-error';
                 msgEl.textContent = `Error: ${err.message}`;
@@ -2645,6 +2920,8 @@
             await fetchEmissionFactors();
             await fetchFacilities();
             await refreshAllData();
+            initMap();
+            await updateEmissionsMap();
         });
 
     </script>
