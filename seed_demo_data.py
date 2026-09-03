@@ -8,23 +8,48 @@ Populates realistic sample data for the Drive-pro demo:
 - 5 Suppliers with self-reported Scope 1/2/3 emissions and status mix
 """
 
+import os
 import sys
+import time
 import requests
 
-BASE_URL = "http://127.0.0.1:8000"
+# Base URL targeting deployed Render app or localhost:
+# e.g. BASE_URL = "https://<paste-your-actual-render-url-here>"
+# Can also be set via environment variable: BASE_URL="https://..."
+# or command line argument: python seed_demo_data.py https://...
+DEFAULT_RENDER_URL = "https://<paste-your-actual-render-url-here>"
+ENV_URL = os.environ.get("BASE_URL")
+CLI_URL = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1].startswith("http") else None
+
+BASE_URL = (ENV_URL or CLI_URL or DEFAULT_RENDER_URL).rstrip("/")
+if "<paste-your-actual-render-url-here>" in BASE_URL:
+    BASE_URL = "http://127.0.0.1:8000"
+
+
+def check_connection():
+    print(f"Connecting to Drive-pro API at {BASE_URL}...")
+    max_retries = 5
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"  Attempt {attempt}/{max_retries}: Checking {BASE_URL}/emissions/summary...")
+            res = requests.get(f"{BASE_URL}/emissions/summary", timeout=30)
+            if res.status_code == 200:
+                print("  Successfully connected to server.")
+                return
+            else:
+                print(f"  Status {res.status_code}: {res.text}")
+        except requests.exceptions.RequestException as e:
+            print(f"  Waiting for server response (Render free-tier spin-up takes ~30-50s)...")
+            if attempt < max_retries:
+                time.sleep(10)
+            else:
+                print(f"\nConnection failed: {e}")
+                print(f"Please ensure {BASE_URL} is running and reachable.")
+                sys.exit(1)
 
 
 def main():
-    print(f"Connecting to Drive-pro API at {BASE_URL}...")
-    try:
-        res = requests.get(f"{BASE_URL}/emissions/summary", timeout=5)
-        if res.status_code != 200:
-            print(f"Error: API returned status {res.status_code}. Is uvicorn running?")
-            sys.exit(1)
-    except requests.exceptions.RequestException as e:
-        print(f"Connection failed: {e}")
-        print("Please ensure the uvicorn server is running: python -m uvicorn main:app --reload")
-        sys.exit(1)
+    check_connection()
 
     print("\n--- 1. SEEDING FACILITIES ---")
     facilities_to_add = [
@@ -319,7 +344,7 @@ def main():
             print(f"    - {sc['name']:<25} | Status: {sc['status']:<10} | Completeness: {sc['data_completeness']:<10} | Total: {sc['total_reported_kg']:>10.1f} kg")
 
     print("\n=== SUCCESS: All realistic demo data seeded successfully! ===")
-    print("Refresh your browser at http://127.0.0.1:8000/ to explore the updated data.")
+    print(f"Refresh your browser at {BASE_URL}/ to explore the updated data.")
 
 
 if __name__ == "__main__":

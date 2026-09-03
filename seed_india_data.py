@@ -4,22 +4,48 @@ seed_india_data.py
 Adds 4 Indian city-level entries (2 facilities, 2 suppliers) with activity logs and emission data.
 """
 
+import os
 import sys
+import time
 import requests
 
-BASE_URL = "http://127.0.0.1:8000"
+# Base URL targeting deployed Render app or localhost:
+# e.g. BASE_URL = "https://<paste-your-actual-render-url-here>"
+# Can also be set via environment variable: BASE_URL="https://..."
+# or command line argument: python seed_india_data.py https://...
+DEFAULT_RENDER_URL = "https://<paste-your-actual-render-url-here>"
+ENV_URL = os.environ.get("BASE_URL")
+CLI_URL = sys.argv[1] if len(sys.argv) > 1 and sys.argv[1].startswith("http") else None
+
+BASE_URL = (ENV_URL or CLI_URL or DEFAULT_RENDER_URL).rstrip("/")
+if "<paste-your-actual-render-url-here>" in BASE_URL:
+    BASE_URL = "http://127.0.0.1:8000"
+
+
+def check_connection():
+    print(f"Connecting to Drive-pro API at {BASE_URL}...")
+    max_retries = 5
+    for attempt in range(1, max_retries + 1):
+        try:
+            print(f"  Attempt {attempt}/{max_retries}: Checking {BASE_URL}/emissions/summary...")
+            res = requests.get(f"{BASE_URL}/emissions/summary", timeout=30)
+            if res.status_code == 200:
+                print("  Successfully connected to server.")
+                return
+            else:
+                print(f"  Status {res.status_code}: {res.text}")
+        except requests.exceptions.RequestException as e:
+            print(f"  Waiting for server response (Render free-tier spin-up takes ~30-50s)...")
+            if attempt < max_retries:
+                time.sleep(10)
+            else:
+                print(f"\nConnection failed: {e}")
+                print(f"Please ensure {BASE_URL} is running and reachable.")
+                sys.exit(1)
 
 
 def main():
-    print(f"Connecting to Drive-pro API at {BASE_URL}...")
-    try:
-        res = requests.get(f"{BASE_URL}/emissions/summary", timeout=5)
-        if res.status_code != 200:
-            print(f"Error: API returned status {res.status_code}. Is uvicorn running?")
-            sys.exit(1)
-    except requests.exceptions.RequestException as e:
-        print(f"Connection failed: {e}")
-        sys.exit(1)
+    check_connection()
 
     print("\n--- 1. SEEDING INDIAN CITY-LEVEL FACILITIES ---")
     facilities_to_add = [
