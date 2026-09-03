@@ -348,7 +348,7 @@
         }
 
         .progress-under {
-            background-color: var(--accent-vermillion);
+            background-color: #4A9B8E;
         }
 
         .progress-over {
@@ -365,8 +365,8 @@
 
         /* 3. Reduction Pathway Callout Card */
         .insight-section {
-            background-color: var(--bg-callout);
-            border: 1px solid rgba(192, 57, 43, 0.2);
+            background-color: #F8EAE7;
+            border: 1px solid rgba(192, 57, 43, 0.25);
             border-left: 4px solid var(--accent-vermillion);
             padding: 2.25rem 2.5rem;
             margin: 0 0 5.5rem 0;
@@ -1137,36 +1137,41 @@
         }
 
         .badge-ready {
-            color: var(--accent-vermillion);
+            color: #4A9B8E;
             letter-spacing: 0.08em;
             text-transform: uppercase;
             font-size: 0.74rem;
+            font-weight: 500;
         }
 
         /* Status Badges for Suppliers */
         .badge-status {
-            padding: 0.2rem 0.6rem;
+            display: inline-block;
+            padding: 0.22rem 0.65rem;
             font-size: 0.72rem;
+            font-weight: 500;
             letter-spacing: 0.06em;
             text-transform: uppercase;
+            border-radius: 9999px !important;
+            line-height: 1.2;
         }
 
         .status-pending {
-            color: var(--text-muted);
-            border: 1px solid var(--border-hairline);
-            background: rgba(138, 133, 128, 0.08);
+            color: #66625D;
+            background-color: #E8E5DF;
+            border: 1px solid #D5D0C7;
         }
 
         .status-submitted {
-            color: #D4823C;
-            border: 1px solid rgba(212, 130, 60, 0.4);
-            background: rgba(212, 130, 60, 0.08);
+            color: var(--accent-vermillion);
+            background-color: rgba(192, 57, 43, 0.12);
+            border: 1px solid rgba(192, 57, 43, 0.28);
         }
 
         .status-verified {
-            color: #4A9B8E;
-            border: 1px solid rgba(74, 155, 142, 0.4);
-            background: rgba(74, 155, 142, 0.08);
+            color: #2E756A;
+            background-color: rgba(74, 155, 142, 0.15);
+            border: 1px solid rgba(74, 155, 142, 0.35);
         }
 
         /* Compliance Readiness Grid */
@@ -2185,8 +2190,8 @@
             } else {
                 bar.className = 'progress-bar-fill progress-under';
                 const remaining = (emissionsTarget - currentTotalTco2e).toFixed(3);
-                statusText.innerHTML = `Within Budget: ${currentTotalTco2e.toFixed(3)} / ${emissionsTarget.toFixed(3)} tCO₂e (${remaining} rem)`;
-                percentText.innerHTML = `<span>${percent.toFixed(1)}%</span>`;
+                statusText.innerHTML = `<span style="color: #4A9B8E; font-weight: 500;">Within Budget</span>: ${currentTotalTco2e.toFixed(3)} / ${emissionsTarget.toFixed(3)} tCO₂e (${remaining} rem)`;
+                percentText.innerHTML = `<span style="color: #4A9B8E;">${percent.toFixed(1)}%</span>`;
             }
         }
 
