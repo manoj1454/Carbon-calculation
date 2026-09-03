@@ -906,6 +906,198 @@
             background: #F7F5F0 !important;
         }
 
+        /* Scenario Planning */
+        .scenario-card {
+            border: 1px solid var(--border-hairline);
+            background: rgba(255, 255, 255, 0.4);
+            padding: 2.25rem 2.5rem;
+        }
+
+        .scenario-sliders-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 3.5rem;
+        }
+
+        @media (max-width: 750px) {
+            .scenario-sliders-grid {
+                grid-template-columns: 1fr;
+                gap: 2.5rem;
+            }
+        }
+
+        .slider-control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+        }
+
+        .slider-title {
+            font-size: 0.76rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .slider-num-pill {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--accent-vermillion);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .scenario-slider {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 3px;
+            background: var(--border-hairline);
+            outline: none;
+            cursor: pointer;
+            margin: 1.25rem 0 0.6rem 0;
+            border-radius: 0 !important;
+        }
+
+        .scenario-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 15px;
+            height: 15px;
+            background: var(--accent-vermillion);
+            cursor: pointer;
+            border-radius: 0 !important;
+            border: none;
+            transition: transform 0.1s ease;
+        }
+
+        .scenario-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+        }
+
+        .scenario-slider::-moz-range-thumb {
+            width: 15px;
+            height: 15px;
+            background: var(--accent-vermillion);
+            cursor: pointer;
+            border-radius: 0 !important;
+            border: none;
+        }
+
+        .slider-caption {
+            font-size: 0.84rem;
+            color: var(--text-muted);
+            font-weight: 300;
+        }
+
+        .scenario-divider {
+            border-top: 1px solid var(--border-hairline);
+            margin: 2.25rem 0;
+        }
+
+        .scenario-metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        @media (max-width: 750px) {
+            .scenario-metrics-grid {
+                grid-template-columns: 1fr;
+                gap: 1.75rem;
+            }
+        }
+
+        .scenario-metric-box {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .scenario-metric-label {
+            font-size: 0.74rem;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.4rem;
+        }
+
+        .scenario-metric-value {
+            font-family: var(--font-serif);
+            font-size: clamp(1.6rem, 2.5vw, 2.2rem);
+            font-weight: 400;
+            color: var(--text-primary);
+            line-height: 1.1;
+            font-variant-numeric: tabular-nums;
+            margin-bottom: 0.35rem;
+        }
+
+        .scenario-metric-sub {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+            font-weight: 300;
+        }
+
+        .scenario-financials-grid {
+            display: grid;
+            grid-template-columns: 1.1fr 1.1fr 1.4fr;
+            gap: 2rem;
+            align-items: baseline;
+        }
+
+        @media (max-width: 750px) {
+            .scenario-financials-grid {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+
+        .scenario-financial-col {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .scenario-cost-value {
+            font-family: var(--font-serif);
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .scenario-avoided-value {
+            font-family: var(--font-serif);
+            font-size: clamp(1.8rem, 3vw, 2.4rem);
+            font-weight: 500;
+            color: var(--accent-vermillion);
+            font-variant-numeric: tabular-nums;
+            line-height: 1.1;
+        }
+
+        .scenario-narrative {
+            background-color: var(--bg-callout);
+            border-left: 3px solid var(--accent-vermillion);
+            padding: 1rem 1.25rem;
+            margin-top: 2rem;
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        .scenario-disclaimer {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            font-weight: 300;
+            margin-top: 1.25rem;
+            letter-spacing: 0.02em;
+        }
+
+
 
 
         code {
@@ -1044,6 +1236,7 @@
             <a href="#recent-activity" class="sidebar-link">Recent Activity</a>
             <a href="#facility-summary" class="sidebar-link">Facility Summary</a>
             <a href="#emissions-map-section" class="sidebar-link">Emissions Map</a>
+            <a href="#scenario-planning-section" class="sidebar-link">Scenario Planning</a>
             <a href="#product-footprint" class="sidebar-link">Product Footprint (PCF)</a>
             <a href="#supplier-engagement" class="sidebar-link">Supplier Engagement</a>
             <a href="#compliance-readiness" class="sidebar-link">Compliance Readiness</a>
@@ -1338,6 +1531,103 @@
 
         <hr class="hairline-divider">
 
+        <!-- Section: Scenario Planning -->
+        <section class="page-section" id="scenario-planning-section">
+            <div class="section-header-wrap">
+                <svg class="section-icon" viewBox="0 0 24 24">
+                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                    <line x1="17" y1="16" x2="23" y2="16"></line>
+                </svg>
+                <h2 class="section-title">Scenario Planning</h2>
+            </div>
+            <p class="section-desc">Model reduction pathways and internal carbon price exposure.</p>
+
+            <div class="scenario-card">
+                <!-- Sliders Grid -->
+                <div class="scenario-sliders-grid">
+                    <!-- Slider 1: Diesel/Fuel Reduction -->
+                    <div class="slider-control-group">
+                        <div class="slider-header">
+                            <label for="slider-reduction" class="slider-title">Diesel / Fuel Reduction</label>
+                            <span id="slider-reduction-val" class="slider-num-pill">0%</span>
+                        </div>
+                        <input type="range" id="slider-reduction" min="0" max="100" value="0" step="1" class="scenario-slider">
+                        <div id="slider-reduction-caption" class="slider-caption">Reduce Scope 1 diesel usage by 0%</div>
+                    </div>
+
+                    <!-- Slider 2: Internal Carbon Price -->
+                    <div class="slider-control-group">
+                        <div class="slider-header">
+                            <label for="slider-price" class="slider-title">Internal Carbon Price</label>
+                            <span id="slider-price-val" class="slider-num-pill">$50 / tCO₂e</span>
+                        </div>
+                        <input type="range" id="slider-price" min="0" max="200" value="50" step="5" class="scenario-slider">
+                        <div id="slider-price-caption" class="slider-caption">Internal carbon price: $50/tCO₂e</div>
+                    </div>
+                </div>
+
+                <div class="scenario-divider"></div>
+
+                <!-- Live Calculated Metrics Grid -->
+                <div class="scenario-metrics-grid">
+                    <div class="scenario-metric-box">
+                        <div class="scenario-metric-label">Projected Scope 1 Emissions</div>
+                        <div id="scen-scope1" class="scenario-metric-value">0.000 tCO₂e</div>
+                        <div id="scen-scope1-kg" class="scenario-metric-sub">0.00 kg CO₂e</div>
+                    </div>
+
+                    <div class="scenario-metric-box">
+                        <div class="scenario-metric-label">Projected Total Emissions</div>
+                        <div id="scen-total" class="scenario-metric-value">0.000 tCO₂e</div>
+                        <div id="scen-total-sub" class="scenario-metric-sub">Scope 1 projected + Scope 2</div>
+                    </div>
+
+                    <div class="scenario-metric-box">
+                        <div class="scenario-metric-label">Emissions Avoided</div>
+                        <div id="scen-avoided" class="scenario-metric-value" style="color: var(--accent-vermillion);">0.000 tCO₂e</div>
+                        <div class="scenario-metric-sub">Net reduction vs baseline</div>
+                    </div>
+                </div>
+
+                <div class="scenario-divider"></div>
+
+                <!-- Financial Exposure -->
+                <div class="scenario-financials-grid">
+                    <div class="scenario-financial-col">
+                        <div class="scenario-metric-label">Carbon Cost at Current Trajectory</div>
+                        <div id="scen-cost-current" class="scenario-cost-value">$0.00</div>
+                    </div>
+                    <div class="scenario-financial-col">
+                        <div class="scenario-metric-label">Carbon Cost under this Scenario</div>
+                        <div id="scen-cost-scenario" class="scenario-cost-value">$0.00</div>
+                    </div>
+                    <div class="scenario-financial-col">
+                        <div class="scenario-metric-label" style="color: var(--accent-vermillion); font-weight: 500;">Estimated Cost Avoided</div>
+                        <div id="scen-cost-avoided" class="scenario-avoided-value">$0.00</div>
+                    </div>
+                </div>
+
+                <!-- Auto-generated Narrative Context -->
+                <div id="scen-narrative" class="scenario-narrative">
+                    At a $50/tCO₂e internal carbon price, a 0% reduction in diesel usage avoids approximately $0.00 in carbon cost exposure.
+                </div>
+
+                <!-- Disclaimer -->
+                <div class="scenario-disclaimer">
+                    Illustrative model based on current logged Scope 1/2 activity. Does not include Scope 3 or verified offset data.
+                </div>
+            </div>
+        </section>
+
+        <hr class="hairline-divider">
+
         <!-- NEW Section: Product Carbon Footprint (PCF) -->
         <section class="page-section" id="product-footprint">
             <div class="section-header-wrap">
@@ -1609,6 +1899,8 @@
         let supplierMarkersLayer = null;
         let emissionsTarget = 25.0; // In-memory JS variable for target (tCO2e)
         let currentTotalTco2e = 0.0; // Current total emissions (tCO2e)
+        let currentScope1Kg = 0.0; // In-memory Scope 1 total (kg) for scenario modeling
+        let currentScope2Kg = 0.0; // In-memory Scope 2 total (kg) for scenario modeling
         let previousTotalTco2e = null; // Stored for smooth hero number tick-up animation
         let recentEntriesData = []; // Cached array of fetched activity entries for CSV export
 
@@ -1892,6 +2184,70 @@
             }
         }
 
+        // Update Scenario Planning Calculations (Live Interactive Client-side Model)
+        function updateScenarioPlanning() {
+            const reductionInput = document.getElementById('slider-reduction');
+            const priceInput = document.getElementById('slider-price');
+            if (!reductionInput || !priceInput) return;
+
+            const reductionPercent = parseFloat(reductionInput.value) || 0;
+            const carbonPrice = parseFloat(priceInput.value) || 0;
+
+            // Live slider labels & captions
+            const redValEl = document.getElementById('slider-reduction-val');
+            const redCapEl = document.getElementById('slider-reduction-caption');
+            const priceValEl = document.getElementById('slider-price-val');
+            const priceCapEl = document.getElementById('slider-price-caption');
+
+            if (redValEl) redValEl.textContent = `${reductionPercent}%`;
+            if (redCapEl) redCapEl.textContent = `Reduce Scope 1 diesel usage by ${reductionPercent}%`;
+            if (priceValEl) priceValEl.textContent = `$${carbonPrice} / tCO₂e`;
+            if (priceCapEl) priceCapEl.textContent = `Internal carbon price: $${carbonPrice}/tCO₂e`;
+
+            // Calculations based on current scope 1 and scope 2 emissions
+            const projectedScope1Kg = currentScope1Kg * (1 - reductionPercent / 100);
+            const projectedScope1Tons = projectedScope1Kg / 1000;
+            const projectedTotalKg = projectedScope1Kg + currentScope2Kg;
+            const projectedTotalTons = projectedTotalKg / 1000;
+            const avoidedKg = currentScope1Kg - projectedScope1Kg;
+            const avoidedTons = avoidedKg / 1000;
+
+            const currentTotalKg = currentScope1Kg + currentScope2Kg;
+            const currentCost = (currentTotalKg / 1000) * carbonPrice;
+            const projectedCost = (projectedTotalKg / 1000) * carbonPrice;
+            const costAvoided = Math.max(0, currentCost - projectedCost);
+
+            const formatUSD = (val) => new Intl.NumberFormat('en-US', {
+                style: 'currency',
+                currency: 'USD',
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            }).format(val);
+
+            // Update DOM output fields
+            const scenS1 = document.getElementById('scen-scope1');
+            const scenS1Kg = document.getElementById('scen-scope1-kg');
+            const scenTot = document.getElementById('scen-total');
+            const scenAvoided = document.getElementById('scen-avoided');
+            const scenCostCur = document.getElementById('scen-cost-current');
+            const scenCostScen = document.getElementById('scen-cost-scenario');
+            const scenCostAvoided = document.getElementById('scen-cost-avoided');
+            const narrativeEl = document.getElementById('scen-narrative');
+
+            if (scenS1) scenS1.textContent = `${projectedScope1Tons.toFixed(3)} tCO₂e`;
+            if (scenS1Kg) scenS1Kg.textContent = `${projectedScope1Kg.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} kg CO₂e`;
+            if (scenTot) scenTot.textContent = `${projectedTotalTons.toFixed(3)} tCO₂e`;
+            if (scenAvoided) scenAvoided.textContent = `${avoidedTons.toFixed(3)} tCO₂e`;
+
+            if (scenCostCur) scenCostCur.textContent = formatUSD(currentCost);
+            if (scenCostScen) scenCostScen.textContent = formatUSD(projectedCost);
+            if (scenCostAvoided) scenCostAvoided.textContent = formatUSD(costAvoided);
+
+            if (narrativeEl) {
+                narrativeEl.textContent = `At a $${carbonPrice}/tCO₂e internal carbon price, a ${reductionPercent}% reduction in diesel usage avoids approximately ${formatUSD(costAvoided)} in carbon cost exposure.`;
+            }
+        }
+
         // 1. Fetch Summary & Update Header + Chart + Target Progress
         async function fetchEmissionsSummary() {
             const headerErr = document.getElementById('header-error');
@@ -1912,6 +2268,8 @@
                 const scope2Total = Number(data.scope2_total || 0);
 
                 currentTotalTco2e = totalKg / 1000;
+                currentScope1Kg = scope1Total;
+                currentScope2Kg = scope2Total;
 
                 // Animate or set total tCO2e readout
                 const totalEl = document.getElementById('total-tco2e');
@@ -1934,6 +2292,9 @@
 
                 // Update Chart
                 updateChart(scope1Total, scope2Total);
+
+                // Update Scenario Planning
+                updateScenarioPlanning();
             } catch (err) {
                 if (headerErr) headerErr.textContent = `Failed to fetch emissions summary: ${err.message}`;
                 if (chartErr) chartErr.textContent = `Failed to update chart: ${err.message}`;
@@ -2917,11 +3278,18 @@
                 exportBtn.addEventListener('click', exportEntriesToCSV);
             }
 
+            // Bind Scenario Planning Sliders
+            const redSlider = document.getElementById('slider-reduction');
+            const priceSlider = document.getElementById('slider-price');
+            if (redSlider) redSlider.addEventListener('input', updateScenarioPlanning);
+            if (priceSlider) priceSlider.addEventListener('input', updateScenarioPlanning);
+
             await fetchEmissionFactors();
             await fetchFacilities();
             await refreshAllData();
             initMap();
             await updateEmissionsMap();
+            updateScenarioPlanning();
         });
 
     </script>
