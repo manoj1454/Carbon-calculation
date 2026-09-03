@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Nexgile-DecarbX | Enterprise Carbon Accounting</title>
+    <title>Nexgile-DecarbX</title>
+    <!-- Favicon: inline SVG solid vermillion square with white leaf mark -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23C0392B'/%3E%3Cpath d='M16 6 C10 12 10 20 16 26 C22 20 22 12 16 6 Z M16 10 L16 23' stroke='%23FFFFFF' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3C/svg%3E">
     <!-- Google Fonts: Zen Old Mincho / Shippori Mincho & Noto Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -41,8 +43,28 @@
             border-radius: 0 !important; /* No rounded corners anywhere */
         }
 
+        /* Custom Scrollbars (Webkit + Firefox) */
         html {
             scroll-behavior: smooth;
+            scrollbar-width: thin;
+            scrollbar-color: #B5AFA5 #F0ECE3;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #F0ECE3;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #B5AFA5;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #8A8580;
         }
 
         body {
@@ -806,6 +828,64 @@
             white-space: nowrap;
         }
 
+        /* Hero Pulse Loading Animation */
+        @keyframes heroPulse {
+            0%, 100% { opacity: 0.45; }
+            50% { opacity: 0.95; }
+        }
+
+        .hero-loading {
+            font-size: clamp(1.1rem, 2.5vw, 1.6rem) !important;
+            font-weight: 400 !important;
+            color: var(--text-muted) !important;
+            letter-spacing: 0.04em;
+            animation: heroPulse 1.8s infinite ease-in-out;
+            font-family: var(--font-body) !important;
+        }
+
+        /* Toast Notification System */
+        .toast-container {
+            position: fixed;
+            bottom: 1.5rem;
+            right: 1.5rem;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            gap: 0.65rem;
+            pointer-events: none;
+        }
+
+        .toast {
+            pointer-events: auto;
+            background: #FFFFFF;
+            border: 1px solid var(--border-hairline);
+            border-left: 3px solid var(--accent-vermillion);
+            padding: 0.85rem 1.25rem;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            box-shadow: 0 4px 18px rgba(0, 0, 0, 0.08);
+            transform: translateX(120%);
+            opacity: 0;
+            transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 240px;
+            max-width: 380px;
+        }
+
+        .toast.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+
+        .toast-icon {
+            width: 14px;
+            height: 14px;
+            stroke: var(--accent-vermillion);
+            flex-shrink: 0;
+        }
+
         .lineage-container {
             max-width: 760px;
         }
@@ -1358,8 +1438,8 @@
         <div class="container">
             <div class="hero-label">Measured Gross Atmospheric Footprint</div>
             <div class="hero-number-wrap">
-                <span id="total-tco2e" class="hero-number">0.000</span>
-                <span class="hero-unit">tCO₂e</span>
+                <span id="total-tco2e" class="hero-number hero-loading">Loading Nexgile-DecarbX...</span>
+                <span id="hero-unit" class="hero-unit" style="display: none;">tCO₂e</span>
             </div>
             <div id="metric-sub" class="hero-subtext">Total gross emissions: 0.00 kg CO₂e (Scope 1: 0 kg | Scope 2: 0 kg)</div>
 
@@ -2272,7 +2352,15 @@
             if (backdrop) backdrop.addEventListener('click', closeSidebar);
 
             links.forEach(link => {
-                link.addEventListener('click', () => {
+                link.addEventListener('click', (e) => {
+                    const href = link.getAttribute('href');
+                    if (href && href.startsWith('#')) {
+                        const targetEl = document.querySelector(href);
+                        if (targetEl) {
+                            e.preventDefault();
+                            targetEl.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }
                     links.forEach(l => l.classList.remove('active'));
                     link.classList.add('active');
                     closeSidebar();
@@ -2419,6 +2507,33 @@
             }
         }
 
+        // Toast Notification System
+        function showToast(message) {
+            const container = document.getElementById('toast-container');
+            if (!container) return;
+
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.innerHTML = `
+                <svg class="toast-icon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>${escapeHtml(message)}</span>
+            `;
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.add('show');
+            });
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => {
+                    if (toast.parentNode) toast.parentNode.removeChild(toast);
+                }, 300);
+            }, 2500);
+        }
+
         // 1. Fetch Summary & Update Header + Chart + Target Progress
         async function fetchEmissionsSummary() {
             const headerErr = document.getElementById('header-error');
@@ -2444,6 +2559,12 @@
 
                 // Animate or set total tCO2e readout
                 const totalEl = document.getElementById('total-tco2e');
+                const heroUnitEl = document.getElementById('hero-unit');
+                if (totalEl && totalEl.classList.contains('hero-loading')) {
+                    totalEl.classList.remove('hero-loading');
+                    if (heroUnitEl) heroUnitEl.style.display = 'inline';
+                }
+
                 if (previousTotalTco2e !== null && previousTotalTco2e !== totalTco2e) {
                     animateCounter(totalEl, previousTotalTco2e, totalTco2e, 600);
                 } else {
@@ -3498,6 +3619,7 @@
                 const created = await response.json();
                 msgEl.className = 'msg-box msg-success';
                 msgEl.textContent = `Facility "${created.name}" registered`;
+                showToast(`Facility "${created.name}" registered`);
                 document.getElementById('fac-name').value = '';
                 document.getElementById('fac-country').value = '';
                 document.getElementById('fac-address').value = '';
@@ -3569,6 +3691,7 @@
                 const created = await response.json();
                 msgEl.className = 'msg-box msg-success';
                 msgEl.textContent = `+${created.emissions_kg} kg CO₂e recorded`;
+                showToast('Entry logged successfully');
 
                 document.getElementById('act-quantity').value = '';
                 document.getElementById('act-unit').value = '';
@@ -3617,6 +3740,7 @@
                 const created = await response.json();
                 msgEl.className = 'msg-box msg-success';
                 msgEl.textContent = `Product "${created.name}" created`;
+                showToast(`Product "${created.name}" registered`);
                 document.getElementById('prod-name').value = '';
                 document.getElementById('prod-sku').value = '';
 
@@ -3681,6 +3805,7 @@
                 const calcKg = (weight_kg * material_emission_factor_kgco2e_per_kg).toFixed(2);
                 msgEl.className = 'msg-box msg-success';
                 msgEl.textContent = `+${weight_kg}kg ${compCreated.material_name} (+${calcKg} kg CO₂e) added`;
+                showToast('Material component added');
                 document.getElementById('comp-weight').value = '';
 
                 await fetchProductsAndFootprints();
@@ -3720,6 +3845,7 @@
                 const created = await response.json();
                 msgEl.className = 'msg-box msg-success';
                 msgEl.textContent = `Supplier "${created.name}" registered`;
+                showToast(`Supplier "${created.name}" registered`);
                 document.getElementById('supp-name').value = '';
                 document.getElementById('supp-country').value = '';
 
@@ -3778,6 +3904,7 @@
                 const totalReported = (scope1_kg + scope2_kg + scope3_kg).toLocaleString();
                 msgEl.className = 'msg-box msg-success';
                 msgEl.textContent = `Reported ${totalReported} kg CO₂e for ${emLogged.reporting_period}`;
+                showToast('Supplier emissions recorded');
                 document.getElementById('supp-em-period').value = '';
                 document.getElementById('supp-em-s1').value = '';
                 document.getElementById('supp-em-s2').value = '';
@@ -3840,5 +3967,7 @@
         });
 
     </script>
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="toast-container"></div>
 </body>
 </html>
