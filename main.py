@@ -146,7 +146,7 @@ def seed_user(payload: dict, db: Session = Depends(get_db)):
 def create_facility(
     facility: schemas.FacilityCreate,
     db: Session = Depends(get_db),
-    _current_user: models.User = Depends(auth.require_employee),
+    _current_user: models.User = Depends(auth.require_manager),
 ):
     db_facility = models.Facility(
         name=facility.name,
@@ -176,7 +176,7 @@ def list_facilities(db: Session = Depends(get_db)):
 def create_activity_entry(
     entry: schemas.ActivityEntryCreate,
     db: Session = Depends(get_db),
-    _current_user: models.User = Depends(auth.require_employee),
+    _current_user: models.User = Depends(auth.require_manager),
 ):
     # 1. Verify facility exists
     facility = db.query(models.Facility).filter(models.Facility.id == entry.facility_id).first()
@@ -411,7 +411,7 @@ def get_insights(db: Session = Depends(get_db)):
 def create_product(
     product: schemas.ProductCreate,
     db: Session = Depends(get_db),
-    _current_user: models.User = Depends(auth.require_employee),
+    _current_user: models.User = Depends(auth.require_manager),
 ):
     fac = db.query(models.Facility).filter(models.Facility.id == product.facility_id).first()
     if not fac:
@@ -444,7 +444,7 @@ def add_product_component(
     product_id: int,
     comp: schemas.ProductComponentCreate,
     db: Session = Depends(get_db),
-    _current_user: models.User = Depends(auth.require_employee),
+    _current_user: models.User = Depends(auth.require_manager),
 ):
     product = db.query(models.Product).filter(models.Product.id == product_id).first()
     if not product:
@@ -500,7 +500,7 @@ def get_product_footprint(product_id: int, db: Session = Depends(get_db)):
 def create_supplier(
     supplier: schemas.SupplierCreate,
     db: Session = Depends(get_db),
-    _current_user: models.User = Depends(auth.require_employee),
+    _current_user: models.User = Depends(auth.require_manager),
 ):
     db_supplier = models.Supplier(
         name=supplier.name,
@@ -561,7 +561,7 @@ def log_supplier_emissions(
     supplier_id: int,
     data: schemas.SupplierEmissionDataCreate,
     db: Session = Depends(get_db),
-    _current_user: models.User = Depends(auth.require_employee),
+    _current_user: models.User = Depends(auth.require_manager),
 ):
     supplier = db.query(models.Supplier).filter(models.Supplier.id == supplier_id).first()
     if not supplier:

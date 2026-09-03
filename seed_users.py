@@ -2,8 +2,8 @@
 """
 seed_users.py
 Creates two demo users:
-  employee1 / employee123  (role: employee — can write data)
-  manager1  / manager123   (role: manager  — read-only view)
+  manager1  / manager123   (role: manager  — can write/edit data)
+  employee1 / employee123  (role: employee — read-only view)
 
 Run locally or against deployed app:
   python seed_users.py
@@ -100,8 +100,8 @@ def main():
         print(f"  (API at {target} not running or unreachable — local DB was updated)")
 
     print("\nUsers configured:")
-    print("  Employee: employee1 / employee123 (Write + Read)")
-    print("  Manager:  manager1  / manager123  (View-only)")
+    print("  Manager:  manager1  / manager123  (Write + Operations)")
+    print("  Employee: employee1 / employee123 (View-only)")
 
 if __name__ == "__main__":
     main()

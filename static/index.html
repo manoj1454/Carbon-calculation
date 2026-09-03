@@ -1582,12 +1582,12 @@
             <div id="signup-role-group" style="display: none; margin-bottom: 1.15rem; text-align: left;">
                 <label for="signup-role" style="display: block; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.3rem;">Account Role</label>
                 <select id="signup-role" class="login-input" style="cursor: pointer;">
-                    <option value="employee">Employee &mdash; Data Entry &amp; Operations</option>
-                    <option value="manager">Manager &mdash; Read-only Analytics &amp; Reports</option>
+                    <option value="manager">Manager &mdash; Full Write Access (Data Entry &amp; Operations)</option>
+                    <option value="employee">Employee &mdash; View-only Access (Analytics &amp; Reports)</option>
                 </select>
                 <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.4;">
-                    &bull; <strong>Employee</strong>: Register facilities, log activity &amp; create PCF products.<br>
-                    &bull; <strong>Manager</strong>: View-only access across all charts, tables &amp; scorecards.
+                    &bull; <strong>Manager</strong>: Full edit access &mdash; register facilities, log activity &amp; create PCF products.<br>
+                    &bull; <strong>Employee</strong>: View-only access across all charts, tables &amp; scorecards.
                 </div>
             </div>
 
@@ -1600,8 +1600,8 @@
 
             <div id="demo-accounts-hint" style="margin-top: 1.25rem; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-hairline); padding-top: 0.85rem; text-align: left;">
                 <strong>Demo Accounts:</strong><br>
-                &bull; <code>employee1</code> / <code>employee123</code> (Write access)<br>
-                &bull; <code>manager1</code> / <code>manager123</code> (View-only)
+                &bull; <code>manager1</code> / <code>manager123</code> (Write &amp; Edit access)<br>
+                &bull; <code>employee1</code> / <code>employee123</code> (View-only)
             </div>
         </div>
     </div>
@@ -1724,7 +1724,7 @@
             <p class="section-desc">Register operational facilities and record verified fuel &amp; energy entries.</p>
 
             <div id="data-ingestion-manager-notice" class="manager-view-notice">
-                🔒 <strong>View-only access (Manager role)</strong> &mdash; Facility registration and activity entry forms are disabled.
+                🔒 <strong>View-only access (Employee role)</strong> &mdash; Facility registration and activity entry forms are disabled. Contact a manager to log entries.
             </div>
 
             <div class="forms-layout">
@@ -2099,7 +2099,7 @@
             <p class="section-desc">Life Cycle Assessment (LCA) module calculating cradle-to-gate component emissions per product unit.</p>
 
             <div id="pcf-manager-notice" class="manager-view-notice">
-                🔒 <strong>View-only access (Manager role)</strong> &mdash; Product and component registration forms are disabled.
+                🔒 <strong>View-only access (Employee role)</strong> &mdash; Product and component registration forms are disabled. Contact a manager to register products.
             </div>
 
             <div class="forms-layout">
@@ -2206,7 +2206,7 @@
             <p class="section-desc">Supply chain Scope 3 primary data collection, verified disclosures, and supplier scorecards.</p>
 
             <div id="supplier-manager-notice" class="manager-view-notice">
-                🔒 <strong>View-only access (Manager role)</strong> &mdash; Supplier registration and emissions logging forms are disabled.
+                🔒 <strong>View-only access (Employee role)</strong> &mdash; Supplier registration and emissions logging forms are disabled. Contact a manager to register suppliers.
             </div>
 
             <div class="forms-layout">
@@ -4177,24 +4177,26 @@
 
         // ── Role-based UI application ──────────────────────────────────
         function applyRoleUI(role) {
-            const isManager = role === 'manager';
+            // Reversed: Manager has full write access; Employee is view-only
+            const isEmployee = role === 'employee';
+
             // Data Ingestion forms (Register Facility + Log Activity Entry)
             const ingestionForms = document.querySelector('#data-ingestion .forms-layout');
             const ingestionNotice = document.getElementById('data-ingestion-manager-notice');
-            if (ingestionForms) ingestionForms.classList.toggle('write-form-locked', isManager);
-            if (ingestionNotice) ingestionNotice.classList.toggle('visible', isManager);
+            if (ingestionForms) ingestionForms.classList.toggle('write-form-locked', isEmployee);
+            if (ingestionNotice) ingestionNotice.classList.toggle('visible', isEmployee);
 
             // PCF forms (Register Product + Add Component)
             const pcfForms = document.querySelector('#product-footprint .forms-layout');
             const pcfNotice = document.getElementById('pcf-manager-notice');
-            if (pcfForms) pcfForms.classList.toggle('write-form-locked', isManager);
-            if (pcfNotice) pcfNotice.classList.toggle('visible', isManager);
+            if (pcfForms) pcfForms.classList.toggle('write-form-locked', isEmployee);
+            if (pcfNotice) pcfNotice.classList.toggle('visible', isEmployee);
 
             // Supplier forms (Register Supplier + Log Emissions)
             const suppForms = document.querySelector('#supplier-engagement .forms-layout');
             const suppNotice = document.getElementById('supplier-manager-notice');
-            if (suppForms) suppForms.classList.toggle('write-form-locked', isManager);
-            if (suppNotice) suppNotice.classList.toggle('visible', isManager);
+            if (suppForms) suppForms.classList.toggle('write-form-locked', isEmployee);
+            if (suppNotice) suppNotice.classList.toggle('visible', isEmployee);
 
             // Update nav indicator
             const navLabel = document.getElementById('nav-user-label');

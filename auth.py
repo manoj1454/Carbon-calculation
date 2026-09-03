@@ -74,5 +74,7 @@ def require_role(role: str):
     return role_checker
 
 
+require_manager = require_role("manager")
 require_employee = require_role("employee")
+
 
