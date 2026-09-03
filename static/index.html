@@ -1504,6 +1504,42 @@
         .manager-view-notice.visible {
             display: block;
         }
+
+        /* Auth tabs for Sign In / Sign Up */
+        .auth-tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-hairline);
+            margin-bottom: 1.5rem;
+        }
+        .auth-tab {
+            flex: 1;
+            padding: 0.65rem 0.5rem;
+            background: none;
+            border: none;
+            border-bottom: 2px solid transparent;
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            transition: all 0.15s ease;
+        }
+        .auth-tab.active {
+            color: var(--accent-vermillion);
+            border-bottom-color: var(--accent-vermillion);
+            font-weight: 600;
+        }
+        .auth-toggle-link {
+            color: var(--accent-vermillion);
+            text-decoration: none;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .auth-toggle-link:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
@@ -1513,32 +1549,56 @@
         <div class="login-card">
             <div class="login-logo">Nexgile-<span>Decarb</span>X</div>
             <div class="login-subtitle">Enterprise Carbon Accounting Platform</div>
-            <div class="login-divider"></div>
+
+            <div class="auth-tabs">
+                <button type="button" id="tab-signin" class="auth-tab active" onclick="setAuthMode('signin')">Sign In</button>
+                <button type="button" id="tab-signup" class="auth-tab" onclick="setAuthMode('signup')">Sign Up</button>
+            </div>
+
             <div style="margin-bottom: 0.85rem; text-align: left;">
                 <label for="login-username" style="display: block; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.3rem;">Username</label>
                 <input
                     id="login-username"
                     class="login-input"
                     type="text"
-                    placeholder="e.g. employee1 or manager1"
+                    placeholder="Enter username (min 3 chars)"
                     autocomplete="username"
                     spellcheck="false"
                 >
             </div>
-            <div style="margin-bottom: 1.25rem; text-align: left;">
+            <div style="margin-bottom: 0.85rem; text-align: left;">
                 <label for="login-input" style="display: block; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.3rem;">Password</label>
                 <input
                     id="login-input"
                     class="login-input"
                     type="password"
-                    placeholder="Enter password"
+                    placeholder="Enter password (min 4 chars)"
                     autocomplete="current-password"
                     spellcheck="false"
                 >
             </div>
+
+            <!-- Role selector: displayed only in Sign Up mode -->
+            <div id="signup-role-group" style="display: none; margin-bottom: 1.15rem; text-align: left;">
+                <label for="signup-role" style="display: block; font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.3rem;">Account Role</label>
+                <select id="signup-role" class="login-input" style="cursor: pointer;">
+                    <option value="employee">Employee &mdash; Data Entry &amp; Operations</option>
+                    <option value="manager">Manager &mdash; Read-only Analytics &amp; Reports</option>
+                </select>
+                <div style="font-size: 0.72rem; color: var(--text-muted); margin-top: 0.35rem; line-height: 1.4;">
+                    &bull; <strong>Employee</strong>: Register facilities, log activity &amp; create PCF products.<br>
+                    &bull; <strong>Manager</strong>: View-only access across all charts, tables &amp; scorecards.
+                </div>
+            </div>
+
             <button id="login-btn" class="login-btn">Sign In</button>
             <div id="login-error" class="login-error">Incorrect username or password.</div>
-            <div style="margin-top: 1.5rem; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-hairline); padding-top: 1rem; text-align: left;">
+
+            <div id="auth-switch-note" style="margin-top: 1.15rem; font-size: 0.78rem; color: var(--text-muted);">
+                Don't have an account? <a href="javascript:void(0)" class="auth-toggle-link" onclick="setAuthMode('signup')">Sign Up</a>
+            </div>
+
+            <div id="demo-accounts-hint" style="margin-top: 1.25rem; font-size: 0.75rem; color: var(--text-muted); border-top: 1px solid var(--border-hairline); padding-top: 0.85rem; text-align: left;">
                 <strong>Demo Accounts:</strong><br>
                 &bull; <code>employee1</code> / <code>employee123</code> (Write access)<br>
                 &bull; <code>manager1</code> / <code>manager123</code> (View-only)
@@ -4217,10 +4277,43 @@
             });
         }
 
-        // ── Login handler ──────────────────────────────────────────────
+        // ── Auth Mode (signin | signup) ───────────────────────────────
+        let currentAuthMode = 'signin';
+
+        window.setAuthMode = function(mode) {
+            currentAuthMode = mode;
+            const tabSignin = document.getElementById('tab-signin');
+            const tabSignup = document.getElementById('tab-signup');
+            const roleGroup = document.getElementById('signup-role-group');
+            const btn = document.getElementById('login-btn');
+            const switchNote = document.getElementById('auth-switch-note');
+            const demoHint = document.getElementById('demo-accounts-hint');
+            const errEl = document.getElementById('login-error');
+
+            if (errEl) errEl.classList.remove('visible');
+
+            if (mode === 'signup') {
+                tabSignin.classList.remove('active');
+                tabSignup.classList.add('active');
+                roleGroup.style.display = 'block';
+                btn.textContent = 'Create Account';
+                switchNote.innerHTML = 'Already have an account? <a href="javascript:void(0)" class="auth-toggle-link" onclick="setAuthMode(\'signin\')">Sign In</a>';
+                if (demoHint) demoHint.style.display = 'none';
+            } else {
+                tabSignup.classList.remove('active');
+                tabSignin.classList.add('active');
+                roleGroup.style.display = 'none';
+                btn.textContent = 'Sign In';
+                switchNote.innerHTML = 'Don\'t have an account? <a href="javascript:void(0)" class="auth-toggle-link" onclick="setAuthMode(\'signup\')">Sign Up</a>';
+                if (demoHint) demoHint.style.display = 'block';
+            }
+        };
+
+        // ── Login / Sign Up handler ────────────────────────────────────
         async function handleLogin() {
             const username = (document.getElementById('login-username')?.value || '').trim();
             const password = (document.getElementById('login-input')?.value || '').trim();
+            const role = document.getElementById('signup-role')?.value || 'employee';
             const errEl = document.getElementById('login-error');
             const btn = document.getElementById('login-btn');
 
@@ -4230,24 +4323,46 @@
                 return;
             }
 
+            if (currentAuthMode === 'signup') {
+                if (username.length < 3) {
+                    if (errEl) { errEl.classList.add('visible'); errEl.textContent = 'Username must be at least 3 characters.'; }
+                    setTimeout(() => errEl && errEl.classList.remove('visible'), 3000);
+                    return;
+                }
+                if (password.length < 4) {
+                    if (errEl) { errEl.classList.add('visible'); errEl.textContent = 'Password must be at least 4 characters.'; }
+                    setTimeout(() => errEl && errEl.classList.remove('visible'), 3000);
+                    return;
+                }
+            }
+
             btn.disabled = true;
-            btn.textContent = 'Signing in...';
+            btn.textContent = currentAuthMode === 'signup' ? 'Creating account...' : 'Signing in...';
 
             try {
-                const formData = new URLSearchParams();
-                formData.append('username', username);
-                formData.append('password', password);
+                let res;
+                if (currentAuthMode === 'signup') {
+                    res = await fetch('/auth/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, password, role }),
+                    });
+                } else {
+                    const formData = new URLSearchParams();
+                    formData.append('username', username);
+                    formData.append('password', password);
 
-                const res = await fetch('/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: formData,
-                });
+                    res = await fetch('/auth/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                        body: formData,
+                    });
+                }
 
                 if (!res.ok) {
                     const data = await res.json().catch(() => ({}));
                     if (errEl) {
-                        errEl.textContent = data.detail || 'Incorrect username or password. Please try again.';
+                        errEl.textContent = data.detail || (currentAuthMode === 'signup' ? 'Failed to create account.' : 'Incorrect username or password.');
                         errEl.classList.add('visible');
                     }
                     document.getElementById('login-input').value = '';
@@ -4272,6 +4387,10 @@
                 applyRoleUI(authRole);
                 await initApp();
 
+                if (currentAuthMode === 'signup') {
+                    showToast(`Welcome ${data.username}! Account created (${data.role}).`);
+                }
+
             } catch (err) {
                 if (errEl) {
                     errEl.textContent = `Connection error: ${err.message}`;
@@ -4280,7 +4399,7 @@
                 setTimeout(() => errEl && errEl.classList.remove('visible'), 4000);
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Sign In';
+                btn.textContent = currentAuthMode === 'signup' ? 'Create Account' : 'Sign In';
             }
         }
 

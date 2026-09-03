@@ -199,3 +199,41 @@ class SupplierScorecardOut(BaseModel):
     status: str
     total_reported_kg: float
     data_completeness: str
+
+
+# ==========================================
+# User Auth Schemas
+# ==========================================
+class UserCreate(BaseModel):
+    username: str
+    password: str
+    role: str = "employee"
+
+    @field_validator("role")
+    def validate_role(cls, v):
+        role_norm = v.strip().lower()
+        if role_norm not in ["employee", "manager"]:
+            raise ValueError("Role must be 'employee' or 'manager'")
+        return role_norm
+
+    @field_validator("username")
+    def validate_username(cls, v):
+        u = v.strip()
+        if len(u) < 3:
+            raise ValueError("Username must be at least 3 characters")
+        return u
+
+    @field_validator("password")
+    def validate_password(cls, v):
+        if len(v) < 4:
+            raise ValueError("Password must be at least 4 characters")
+        return v
+
+
+class UserOut(BaseModel):
+    id: int
+    username: str
+    role: str
+
+    model_config = ConfigDict(from_attributes=True)
+

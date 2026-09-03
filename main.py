@@ -83,7 +83,36 @@ def login(
     return {"access_token": token, "token_type": "bearer", "role": user.role, "username": user.username}
 
 
+@app.post("/auth/register", status_code=status.HTTP_201_CREATED)
+@app.post("/auth/signup", status_code=status.HTTP_201_CREATED)
+def register(user_in: schemas.UserCreate, db: Session = Depends(get_db)):
+    existing = db.query(models.User).filter(models.User.username == user_in.username).first()
+    if existing:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Username '{user_in.username}' is already taken. Please choose another.",
+        )
+    user = models.User(
+        username=user_in.username,
+        hashed_password=auth.hash_password(user_in.password),
+        role=user_in.role,
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    token = auth.create_access_token(data={"sub": user.username, "role": user.role})
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "role": user.role,
+        "username": user.username,
+        "message": f"Account '{user.username}' created successfully.",
+    }
+
+
 @app.get("/auth/me")
+
 def get_me(current_user: models.User = Depends(auth.get_current_user)):
     return {"username": current_user.username, "role": current_user.role}
 
