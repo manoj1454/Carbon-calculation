@@ -31,6 +31,8 @@ def main():
         {"name": "Gigafactory 1", "country": "US"},
         {"name": "Riverside Distribution Center", "country": "UK"},
         {"name": "Chennai Manufacturing Hub", "country": "IN"},
+        {"name": "Delhi Logistics Hub", "country": "Delhi"},
+        {"name": "Bengaluru Tech Campus", "country": "Bengaluru"},
     ]
 
     # Fetch existing facilities to avoid duplicates
@@ -96,6 +98,33 @@ def main():
             "geography": "Global",
             "quantity": 500.0,
             "unit": "kg",
+            "date": "2026-09-03",
+        },
+        {
+            "facility_id": facility_ids.get("Delhi Logistics Hub"),
+            "scope": 1,
+            "fuel_type": "diesel",
+            "geography": "IN",
+            "quantity": 600.0,
+            "unit": "liters",
+            "date": "2026-09-03",
+        },
+        {
+            "facility_id": facility_ids.get("Delhi Logistics Hub"),
+            "scope": 2,
+            "fuel_type": "electricity",
+            "geography": "IN",
+            "quantity": 8000.0,
+            "unit": "kWh",
+            "date": "2026-09-03",
+        },
+        {
+            "facility_id": facility_ids.get("Bengaluru Tech Campus"),
+            "scope": 2,
+            "fuel_type": "electricity",
+            "geography": "IN",
+            "quantity": 20000.0,
+            "unit": "kWh",
             "date": "2026-09-03",
         },
     ]
@@ -187,6 +216,14 @@ def main():
         {
             "supplier": {"name": "Atlas Component Works", "country": "US", "category": "Manufacturing"},
             "emissions": {"reporting_period": "2026-Q2", "scope1_kg": 18500.0, "scope2_kg": 9200.0, "scope3_kg": 4100.0},
+        },
+        {
+            "supplier": {"name": "Mumbai Precision Components", "country": "Mumbai", "category": "Manufacturing"},
+            "emissions": {"reporting_period": "2026-Q2", "scope1_kg": 9800.0, "scope2_kg": 4200.0, "scope3_kg": 2100.0},
+        },
+        {
+            "supplier": {"name": "Hyderabad Textile Works", "country": "Hyderabad", "category": "Raw Materials"},
+            "emissions": {"reporting_period": "2026-Q2", "scope1_kg": 6500.0, "scope2_kg": 2800.0, "scope3_kg": 1400.0},
         },
     ]
 

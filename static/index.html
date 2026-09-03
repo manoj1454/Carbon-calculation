@@ -1915,8 +1915,18 @@
         let previousTotalTco2e = null; // Stored for smooth hero number tick-up animation
         let recentEntriesData = []; // Cached array of fetched activity entries for CSV export
 
-        // Hardcoded country coordinates lookup for Global Emissions Map
+        // Hardcoded location (country & city) coordinates lookup for Global Emissions Map
         const COUNTRY_COORDINATES = {
+            // City-level Indian locations
+            "Delhi": [28.6139, 77.2090],
+            "New Delhi": [28.6139, 77.2090],
+            "Mumbai": [19.0760, 72.8777],
+            "Bengaluru": [12.9716, 77.5946],
+            "Bangalore": [12.9716, 77.5946],
+            "Chennai": [13.0827, 80.2707],
+            "Hyderabad": [17.3850, 78.4867],
+
+            // Country-level locations
             "US": [39.8, -98.6],
             "USA": [39.8, -98.6],
             "United States": [39.8, -98.6],
@@ -1938,13 +1948,24 @@
             "Global": [20.0, 0.0]
         };
 
+        // Helper to resolve city or country string to coordinates
+        function getLocationCoords(locKey) {
+            if (!locKey) return null;
+            const clean = String(locKey).trim();
+            if (COUNTRY_COORDINATES[clean]) return COUNTRY_COORDINATES[clean];
+            if (COUNTRY_COORDINATES[clean.toUpperCase()]) return COUNTRY_COORDINATES[clean.toUpperCase()];
+            const titleCase = clean.charAt(0).toUpperCase() + clean.slice(1).toLowerCase();
+            if (COUNTRY_COORDINATES[titleCase]) return COUNTRY_COORDINATES[titleCase];
+            return null;
+        }
+
         // Initialize Leaflet map with CartoDB Positron light tile layer
         function initMap() {
             const mapContainer = document.getElementById('emissions-map');
             if (!mapContainer || mapInstance) return;
 
             mapInstance = L.map('emissions-map', {
-                center: [28, 15],
+                center: [24, 45],
                 zoom: 2,
                 minZoom: 1,
                 maxZoom: 11,
@@ -1983,8 +2004,7 @@
                     const maxEm = Math.max(...facData.map(f => f.total_emissions_kg || 0), 1);
 
                     facData.forEach(fac => {
-                        const countryKey = (fac.country || '').trim();
-                        const coords = COUNTRY_COORDINATES[countryKey] || COUNTRY_COORDINATES[countryKey.toUpperCase()];
+                        const coords = getLocationCoords(fac.country);
                         if (coords) {
                             const totalKg = Number(fac.total_emissions_kg || 0);
                             const radius = Math.max(9, Math.min(28, 9 + Math.round((totalKg / maxEm) * 16)));
@@ -2002,7 +2022,7 @@
                                 <div style="padding: 6px 8px;">
                                     <div style="font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: #C0392B; font-weight: 600; margin-bottom: 2px;">Operational Facility</div>
                                     <div style="font-family: 'Zen Old Mincho', serif; font-size: 1.05rem; font-weight: 500; color: #1A1A1A; margin-bottom: 4px;">${escapeHtml(fac.facility_name)}</div>
-                                    <div style="font-size: 0.85rem; color: #8A8580; margin-bottom: 2px;">Country: <strong style="color: #1A1A1A;">${escapeHtml(fac.country)}</strong></div>
+                                    <div style="font-size: 0.85rem; color: #8A8580; margin-bottom: 2px;">Location: <strong style="color: #1A1A1A;">${escapeHtml(fac.country)}</strong></div>
                                     <div style="font-size: 0.85rem; color: #8A8580;">Total Emissions: <strong style="color: #C0392B; font-variant-numeric: tabular-nums;">${totalKg.toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1})} kg CO₂e</strong></div>
                                     <div style="font-size: 0.75rem; color: #8A8580; margin-top: 2px;">Scope 1: ${Number(fac.scope1_total || 0).toLocaleString()} kg | Scope 2: ${Number(fac.scope2_total || 0).toLocaleString()} kg</div>
                                 </div>
@@ -2021,14 +2041,14 @@
                 const suppRes = await fetch('/suppliers/scorecards');
                 if (suppRes.ok) {
                     const suppData = await suppRes.json();
-                    const countryCount = {};
+                    const locationCount = {};
 
                     suppData.forEach(supp => {
-                        const countryKey = (supp.country || '').trim();
-                        const baseCoords = COUNTRY_COORDINATES[countryKey] || COUNTRY_COORDINATES[countryKey.toUpperCase()];
+                        const baseCoords = getLocationCoords(supp.country);
                         if (baseCoords) {
-                            countryCount[countryKey] = (countryCount[countryKey] || 0) + 1;
-                            const offset = (countryCount[countryKey] - 1) * 1.5;
+                            const locKey = (supp.country || '').trim().toLowerCase();
+                            locationCount[locKey] = (locationCount[locKey] || 0) + 1;
+                            const offset = (locationCount[locKey] - 1) * 1.5;
                             const coords = [baseCoords[0] + offset * 0.6, baseCoords[1] + offset * 1.2];
 
                             const totalReported = Number(supp.total_reported_kg || 0);
