@@ -1,0 +1,2263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexgile-DecarbX | Enterprise Carbon Accounting</title>
+    <!-- Google Fonts: Zen Old Mincho / Shippori Mincho & Noto Sans -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@300;400;500;600&family=Shippori+Mincho:wght@400;500;600;700&family=Zen+Old+Mincho:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chart.js via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            /* Palette: Japanese Editorial Minimalism (Ma) Refined */
+            --bg-canvas: #F7F5F0;
+            --bg-hero: #FBF9F5;
+            --bg-nav: #EFEBE2;
+            --bg-table-header: #F0ECE3;
+            --bg-callout: #FBF3F1;
+            --text-primary: #1A1A1A;
+            --text-muted: #8A8580;
+            --accent-vermillion: #C0392B;
+            --accent-vermillion-hover: #A93226;
+            --border-hairline: #DDD8CF;
+            --border-accent-grey: #B5AFA5;
+            --font-serif: 'Zen Old Mincho', 'Shippori Mincho', Georgia, serif;
+            --font-body: 'Noto Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            border-radius: 0 !important; /* No rounded corners anywhere */
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--bg-canvas);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 15px;
+            font-weight: 400;
+            line-height: 1.7;
+            padding-bottom: 10rem;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .container {
+            max-width: 1040px;
+            margin: 0 auto;
+            padding: 0 2rem;
+        }
+
+        /* 1. Header Bar: Full-Width Top Anchor */
+        .top-nav {
+            background-color: var(--bg-nav);
+            height: 64px;
+            border-bottom: 1px solid var(--border-hairline);
+            display: flex;
+            align-items: center;
+            width: 100%;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .nav-toggle-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.35rem;
+            transition: color 0.2s ease;
+        }
+
+        .nav-toggle-btn:hover {
+            color: var(--accent-vermillion);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: baseline;
+            gap: 0.85rem;
+        }
+
+        .nav-logo {
+            font-family: var(--font-serif);
+            font-size: 1.3rem;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            color: var(--text-primary);
+        }
+
+        .nav-tagline {
+            font-size: 0.75rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            border-left: 1px solid var(--border-hairline);
+            padding-left: 0.85rem;
+        }
+
+        @media (max-width: 600px) {
+            .nav-tagline {
+                display: none;
+            }
+        }
+
+        .nav-status {
+            display: flex;
+            align-items: center;
+            gap: 0.45rem;
+            font-size: 0.72rem;
+            letter-spacing: 0.16em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--accent-vermillion);
+            display: inline-block;
+        }
+
+        /* Collapsible Left Sidebar Drawer */
+        .sidebar-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(26, 26, 26, 0.25);
+            backdrop-filter: blur(2px);
+            z-index: 998;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease-in-out;
+        }
+
+        .sidebar-backdrop.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .sidebar-drawer {
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            width: 260px;
+            background-color: var(--bg-nav);
+            border-right: 1px solid var(--border-hairline);
+            z-index: 999;
+            transform: translateX(-100%);
+            transition: transform 0.25s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem 0;
+            box-shadow: 4px 0 24px rgba(0,0,0,0.06);
+        }
+
+        .sidebar-drawer.active {
+            transform: translateX(0);
+        }
+
+        .sidebar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 1.5rem 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border-hairline);
+        }
+
+        .sidebar-title {
+            font-family: var(--font-serif);
+            font-size: 1.15rem;
+            color: var(--text-primary);
+        }
+
+        .sidebar-close {
+            background: transparent;
+            border: none;
+            font-size: 1.6rem;
+            line-height: 1;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0 0.25rem;
+            transition: color 0.2s ease;
+        }
+
+        .sidebar-close:hover {
+            color: var(--accent-vermillion);
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            padding-top: 1rem;
+            overflow-y: auto;
+        }
+
+        .sidebar-link {
+            padding: 0.8rem 1.5rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.88rem;
+            letter-spacing: 0.02em;
+            border-left: 3px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-link:hover,
+        .sidebar-link.active {
+            color: var(--accent-vermillion);
+            border-left-color: var(--accent-vermillion);
+            background: rgba(192, 57, 43, 0.04);
+        }
+
+        /* 2. Hero Visual Frame Band */
+        .hero-band {
+            background-color: var(--bg-hero);
+            border-bottom: 1px solid var(--border-hairline);
+            padding: 64px 0 72px 0;
+            margin-bottom: 5.5rem;
+        }
+
+        .hero-label {
+            font-size: 0.76rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 1.25rem;
+        }
+
+        .hero-number-wrap {
+            display: flex;
+            align-items: baseline;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem;
+        }
+
+        .hero-number {
+            font-family: var(--font-serif);
+            font-size: clamp(88px, 14vw, 136px);
+            font-weight: 400;
+            line-height: 0.9;
+            letter-spacing: -0.03em;
+            color: var(--accent-vermillion);
+            font-variant-numeric: tabular-nums;
+        }
+
+        .hero-unit {
+            font-family: var(--font-serif);
+            font-size: clamp(24px, 3.5vw, 36px);
+            font-weight: 400;
+            color: var(--text-muted);
+            letter-spacing: 0.05em;
+        }
+
+        .hero-subtext {
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            font-weight: 300;
+            margin-bottom: 2.75rem;
+        }
+
+        /* Quiet Target Track within Hero Band */
+        .target-box {
+            max-width: 460px;
+            background: rgba(255, 255, 255, 0.45);
+            border: 1px solid var(--border-hairline);
+            padding: 1.25rem 1.5rem;
+        }
+
+        .target-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            font-size: 0.8rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.85rem;
+        }
+
+        .target-input-wrap {
+            display: flex;
+            align-items: baseline;
+            gap: 0.4rem;
+        }
+
+        .target-input {
+            width: 85px;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--border-hairline);
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            color: var(--text-primary);
+            text-align: right;
+            padding: 0.2rem 0;
+            outline: none;
+            transition: border-bottom-color 0.2s ease;
+        }
+
+        .target-input:focus {
+            border-bottom-color: var(--accent-vermillion);
+        }
+
+        .progress-bar-track {
+            width: 100%;
+            height: 3px;
+            background-color: var(--border-hairline);
+            overflow: hidden;
+            margin: 0.75rem 0 0.6rem 0;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            transition: width 0.5s ease;
+        }
+
+        .progress-under {
+            background-color: var(--accent-vermillion);
+        }
+
+        .progress-over {
+            background-color: var(--accent-vermillion);
+        }
+
+        .progress-status {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* 3. Reduction Pathway Callout Card */
+        .insight-section {
+            background-color: var(--bg-callout);
+            border: 1px solid rgba(192, 57, 43, 0.2);
+            border-left: 4px solid var(--accent-vermillion);
+            padding: 2.25rem 2.5rem;
+            margin: 0 0 5.5rem 0;
+        }
+
+        .insight-header {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--accent-vermillion);
+            margin-bottom: 0.85rem;
+        }
+
+        .insight-body {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            font-weight: 400;
+            line-height: 1.65;
+            color: var(--text-primary);
+            margin-bottom: 1.15rem;
+        }
+
+        .insight-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        /* Section Distinction & Minimal Line SVGs */
+        .page-section {
+            margin-bottom: 6rem;
+        }
+
+        .section-header-wrap {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            border-left: 2px solid var(--border-accent-grey);
+            padding-left: 1.25rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .section-icon {
+            width: 19px;
+            height: 19px;
+            stroke: var(--text-muted);
+            stroke-width: 1.5;
+            fill: none;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+
+        .section-title {
+            font-family: var(--font-serif);
+            font-size: 1.75rem;
+            font-weight: 400;
+            letter-spacing: 0.01em;
+            color: var(--text-primary);
+        }
+
+        .section-desc {
+            font-size: 0.92rem;
+            color: var(--text-muted);
+            font-weight: 300;
+            padding-left: 1.25rem;
+            margin-bottom: 3rem;
+        }
+
+        /* Hairline Divider */
+        .hairline-divider {
+            border: none;
+            border-top: 1px solid var(--border-hairline);
+            margin: 6rem 0;
+        }
+
+        /* Forms Layout */
+        .forms-layout {
+            display: grid;
+            grid-template-columns: 1fr 1.4fr;
+            gap: 5rem;
+            margin-top: 1rem;
+        }
+
+        @media (max-width: 800px) {
+            .forms-layout {
+                grid-template-columns: 1fr;
+                gap: 3.5rem;
+            }
+        }
+
+        .form-column-title {
+            font-family: var(--font-serif);
+            font-size: 1.25rem;
+            font-weight: 400;
+            color: var(--text-primary);
+            margin-bottom: 2rem;
+            padding-bottom: 0.5rem;
+            border-bottom: 1px solid var(--border-hairline);
+        }
+
+        .form-group {
+            margin-bottom: 2rem;
+        }
+
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 550px) {
+            .form-row-2 {
+                grid-template-columns: 1fr;
+                gap: 1.5rem;
+            }
+        }
+
+        label {
+            display: block;
+            font-size: 0.75rem;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            margin-bottom: 0.5rem;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="date"],
+        select {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--border-hairline);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.95rem;
+            font-weight: 400;
+            padding: 0.65rem 0;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+            transition: border-bottom-color 0.2s ease;
+        }
+
+        select {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238A8580' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0 center;
+            background-size: 1em;
+            padding-right: 1.5rem;
+        }
+
+        input:focus,
+        select:focus {
+            border-bottom-color: var(--accent-vermillion);
+        }
+
+        /* Buttons: Solid Vermillion for Primary Actions */
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--accent-vermillion);
+            border: 1px solid var(--accent-vermillion);
+            color: #FFFFFF;
+            font-family: var(--font-body);
+            font-size: 0.85rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 10px 22px;
+            cursor: pointer;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+            width: auto;
+        }
+
+        .btn-primary:hover {
+            background-color: var(--accent-vermillion-hover);
+            border-color: var(--accent-vermillion-hover);
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: transparent;
+            border: 1px solid var(--border-hairline);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+            font-size: 0.8rem;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 8px 18px;
+            cursor: pointer;
+            transition: border-color 0.2s ease, color 0.2s ease;
+            width: auto;
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--accent-vermillion);
+            color: var(--accent-vermillion);
+        }
+
+        .msg-box {
+            font-size: 0.85rem;
+            margin-top: 1rem;
+            min-height: 1.5rem;
+        }
+
+        .msg-success {
+            color: var(--accent-vermillion);
+        }
+
+        .msg-error {
+            color: var(--accent-vermillion);
+        }
+
+        .error-text {
+            color: var(--accent-vermillion);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Chart.js Container */
+        .chart-container {
+            margin: 2.5rem 0;
+            height: 260px;
+            width: 100%;
+        }
+
+        /* Tables with Subtle Header Background Tint (#F0ECE3) */
+        .table-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .table-wrap {
+            overflow-x: auto;
+            border: 1px solid var(--border-hairline);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.92rem;
+        }
+
+        th {
+            font-size: 0.74rem;
+            font-weight: 500;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 1rem 1.25rem;
+            background-color: var(--bg-table-header);
+            border-bottom: 1px solid var(--border-hairline);
+            text-align: left;
+        }
+
+        td {
+            padding: 1.25rem 1.25rem;
+            border-bottom: 1px solid rgba(221, 216, 207, 0.5);
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+        }
+
+        /* Right-align numeric columns for accounting clarity */
+        th.num-col,
+        td.num-col {
+            text-align: right;
+        }
+
+        code {
+            font-family: var(--font-body);
+            color: var(--text-muted);
+            font-size: 0.88rem;
+        }
+
+        /* Minimalist Badges */
+        .badge {
+            display: inline-block;
+            font-size: 0.78rem;
+            font-weight: 400;
+            letter-spacing: 0.04em;
+        }
+
+        .badge-scope1 {
+            color: var(--accent-vermillion);
+        }
+
+        .badge-scope2 {
+            color: var(--text-muted);
+        }
+
+        .badge-source {
+            color: var(--accent-vermillion);
+        }
+
+        .badge-facility {
+            color: var(--text-primary);
+        }
+
+        .badge-ready {
+            color: var(--accent-vermillion);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            font-size: 0.74rem;
+        }
+
+        /* Status Badges for Suppliers */
+        .badge-status {
+            padding: 0.2rem 0.6rem;
+            font-size: 0.72rem;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+        }
+
+        .status-pending {
+            color: var(--text-muted);
+            border: 1px solid var(--border-hairline);
+            background: rgba(138, 133, 128, 0.08);
+        }
+
+        .status-submitted {
+            color: #D4823C;
+            border: 1px solid rgba(212, 130, 60, 0.4);
+            background: rgba(212, 130, 60, 0.08);
+        }
+
+        .status-verified {
+            color: #4A9B8E;
+            border: 1px solid rgba(74, 155, 142, 0.4);
+            background: rgba(74, 155, 142, 0.08);
+        }
+
+        /* Compliance Readiness Grid */
+        .compliance-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 3rem;
+            margin-top: 1rem;
+        }
+
+        .compliance-item {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 1.5rem;
+            border: 1px solid var(--border-hairline);
+            background: rgba(255, 255, 255, 0.35);
+        }
+
+        .compliance-name {
+            font-family: var(--font-serif);
+            font-size: 1.15rem;
+            font-weight: 400;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .compliance-desc {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin-bottom: 1.25rem;
+            font-weight: 300;
+        }
+    </style>
+</head>
+<body>
+    <!-- 1. Header Bar: Full-Width Top Anchor -->
+    <nav class="top-nav">
+        <div class="container nav-inner">
+            <div class="nav-left">
+                <!-- Collapsible Sidebar Hamburger Button -->
+                <button id="sidebar-toggle-btn" class="nav-toggle-btn" aria-label="Toggle Navigation">
+                    <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round">
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <div class="nav-brand">
+                    <span class="nav-logo">Nexgile-DecarbX</span>
+                    <span class="nav-tagline">Carbon Accounting</span>
+                </div>
+            </div>
+            <div class="nav-status">
+                <span class="status-dot"></span>
+                <span>System Active</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Collapsible Left Sidebar Drawer -->
+    <div id="sidebar-backdrop" class="sidebar-backdrop"></div>
+    <aside id="sidebar-drawer" class="sidebar-drawer">
+        <div class="sidebar-header">
+            <span class="sidebar-title">Index</span>
+            <button id="sidebar-close-btn" class="sidebar-close" aria-label="Close Sidebar">&times;</button>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="#overview" class="sidebar-link active">Overview</a>
+            <a href="#data-ingestion" class="sidebar-link">Data Ingestion</a>
+            <a href="#emissions-distribution" class="sidebar-link">Emissions Distribution</a>
+            <a href="#recent-activity" class="sidebar-link">Recent Activity</a>
+            <a href="#facility-summary" class="sidebar-link">Facility Summary</a>
+            <a href="#product-footprint" class="sidebar-link">Product Footprint (PCF)</a>
+            <a href="#supplier-engagement" class="sidebar-link">Supplier Engagement</a>
+            <a href="#compliance-readiness" class="sidebar-link">Compliance Readiness</a>
+        </nav>
+    </aside>
+
+    <!-- 2. Hero Visual Frame Band: Dedicated Hero Zone -->
+    <header class="hero-band" id="overview">
+        <div class="container">
+            <div class="hero-label">Measured Gross Atmospheric Footprint</div>
+            <div class="hero-number-wrap">
+                <span id="total-tco2e" class="hero-number">0.000</span>
+                <span class="hero-unit">tCO₂e</span>
+            </div>
+            <div id="metric-sub" class="hero-subtext">Total gross emissions: 0.00 kg CO₂e (Scope 1: 0 kg | Scope 2: 0 kg)</div>
+
+            <!-- Target Budget Container -->
+            <div class="target-box">
+                <div class="target-header">
+                    <span>Target Budget</span>
+                    <div class="target-input-wrap">
+                        <input 
+                            type="number" 
+                            id="emissions-target-input" 
+                            placeholder="25.0" 
+                            step="any" 
+                            min="0"
+                            class="target-input"
+                        >
+                        <span style="color: var(--text-muted);">tCO₂e</span>
+                    </div>
+                </div>
+                <div class="progress-bar-track">
+                    <div id="target-progress-bar" class="progress-bar-fill progress-under" style="width: 0%;"></div>
+                </div>
+                <div class="progress-status">
+                    <span id="progress-text">Target: 25.000 tCO₂e</span>
+                    <span id="progress-percent">0.0%</span>
+                </div>
+            </div>
+            <div id="header-error" class="error-text"></div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- 3. AI Reduction Insight Callout Card -->
+        <section id="insights-card" class="insight-section">
+            <div class="insight-header">
+                <svg class="section-icon" style="stroke: var(--accent-vermillion);" viewBox="0 0 24 24">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <line x1="12" y1="8" x2="12" y2="12"></line>
+                    <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span>Reduction Pathway Insight</span>
+            </div>
+            <div id="insight-recommendation" class="insight-body">
+                Analyzing reduction pathways...
+            </div>
+            <div id="insight-details" class="insight-meta" style="display: none;"></div>
+            <div id="insight-error" class="error-text"></div>
+        </section>
+
+        <!-- Section: Data Ingestion -->
+        <section class="page-section" id="data-ingestion">
+            <div class="section-header-wrap">
+                <svg class="section-icon" viewBox="0 0 24 24">
+                    <path d="M12 20h9"></path>
+                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+                </svg>
+                <h2 class="section-title">Data Ingestion</h2>
+            </div>
+            <p class="section-desc">Register operational facilities and record verified fuel &amp; energy entries.</p>
+
+            <div class="forms-layout">
+                <!-- Column A: Register Facility -->
+                <div>
+                    <div class="form-column-title">Register Facility</div>
+                    <form id="facility-form">
+                        <div class="form-group">
+                            <label for="fac-name">Facility Name</label>
+                            <input type="text" id="fac-name" placeholder="Austin Assembly Plant" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="fac-country">Country</label>
+                            <input type="text" id="fac-country" placeholder="e.g. US, UK, DE, IN" required>
+                        </div>
+                        <button type="submit" id="fac-submit-btn" class="btn-primary">Register Facility</button>
+                        <div id="facility-msg" class="msg-box"></div>
+                    </form>
+                </div>
+
+                <!-- Column B: Log Activity Entry -->
+                <div>
+                    <div class="form-column-title">Log Activity Entry</div>
+                    <form id="activity-form">
+                        <div class="form-group">
+                            <label for="act-facility">Facility</label>
+                            <select id="act-facility" required>
+                                <option value="">Loading facilities...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row-2">
+                            <div>
+                                <label for="act-scope">Scope</label>
+                                <select id="act-scope" required>
+                                    <option value="1">Scope 1 (Direct)</option>
+                                    <option value="2">Scope 2 (Indirect)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="act-fuel">Fuel Type</label>
+                                <select id="act-fuel" required>
+                                    <option value="natural_gas">natural_gas</option>
+                                    <option value="diesel">diesel</option>
+                                    <option value="petrol">petrol</option>
+                                    <option value="lpg">lpg</option>
+                                    <option value="coal">coal</option>
+                                    <option value="electricity">electricity</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="form-row-2">
+                            <div>
+                                <label for="act-geo">Geography</label>
+                                <select id="act-geo" required>
+                                    <option value="Global">Global</option>
+                                    <option value="US">US</option>
+                                    <option value="UK">UK</option>
+                                    <option value="EU">EU</option>
+                                    <option value="IN">IN</option>
+                                    <option value="DE">DE</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="act-quantity">Quantity</label>
+                                <input type="number" step="any" min="0.0001" id="act-quantity" placeholder="500.0" required>
+                            </div>
+                        </div>
+
+                        <div class="form-row-2">
+                            <div>
+                                <label for="act-unit">Unit</label>
+                                <input type="text" id="act-unit" placeholder="liters, kWh, m3" required>
+                            </div>
+                            <div>
+                                <label for="act-date">Date</label>
+                                <input type="date" id="act-date" required>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="act-submit-btn" class="btn-primary">Record Entry</button>
+                        <div id="activity-msg" class="msg-box"></div>
+                    </form>
+                </div>
+            </div>
+        </section>
+
+        <hr class="hairline-divider">
+
+        <!-- Section: Emissions Distribution -->
+        <section class="page-section" id="emissions-distribution">
+            <div class="section-header-wrap">
+                <svg class="section-icon" viewBox="0 0 24 24">
+                    <line x1="12" y1="20" x2="12" y2="10"></line>
+                    <line x1="18" y1="20" x2="18" y2="4"></line>
+                    <line x1="6" y1="20" x2="6" y2="16"></line>
+                    <line x1="3" y1="20" x2="21" y2="20"></line>
+                </svg>
+                <h2 class="section-title">Emissions Distribution</h2>
+            </div>
+            <p class="section-desc">Scope 1 direct combustion compared with Scope 2 indirect purchased energy.</p>
+            <div id="chart-error" class="error-text"></div>
+            <div class="chart-container">
+                <canvas id="emissionsChart"></canvas>
+            </div>
+        </section>
+
+        <hr class="hairline-divider">
+
+        <!-- Section: Recent Activity Entries -->
+        <section class="page-section" id="recent-activity">
+            <div class="table-top-bar">
+                <div>
+                    <div class="section-header-wrap" style="margin-bottom: 0;">
+                        <svg class="section-icon" viewBox="0 0 24 24">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                            <polyline points="14 2 14 8 20 8"></polyline>
+                            <line x1="16" y1="13" x2="8" y2="13"></line>
+                            <line x1="16" y1="17" x2="8" y2="17"></line>
+                        </svg>
+                        <h2 class="section-title">Recent Activity Entries</h2>
+                    </div>
+                    <p class="section-desc" style="margin-bottom: 0; padding-top: 0.25rem;">Chronological log of verified operational activity records.</p>
+                </div>
+                <button id="export-csv-btn" class="btn-secondary">
+                    <svg style="width: 14px; height: 14px; stroke: currentColor; fill: none; stroke-width: 2;" viewBox="0 0 24 24">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="7 10 12 15 17 10"></polyline>
+                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                    </svg>
+                    Export CSV
+                </button>
+            </div>
+            <div id="entries-error" class="error-text"></div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Facility</th>
+                            <th>Scope</th>
+                            <th>Fuel</th>
+                            <th class="num-col">Quantity</th>
+                            <th>Unit</th>
+                            <th class="num-col">Emissions (kg)</th>
+                            <th style="text-align: right;">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody id="entries-tbody">
+                        <tr>
+                            <td colspan="7" style="color: var(--text-muted); padding: 2rem 1.25rem;">Loading activity entries...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <hr class="hairline-divider">
+
+        <!-- Section: Facility Summary -->
+        <section class="page-section" id="facility-summary">
+            <div class="section-header-wrap">
+                <svg class="section-icon" viewBox="0 0 24 24">
+                    <path d="M2 20h20"></path>
+                    <path d="M4 20V9l7 4V9l7 4v7"></path>
+                    <rect x="7" y="15" width="2" height="2"></rect>
+                    <rect x="15" y="15" width="2" height="2"></rect>
+                </svg>
+                <h2 class="section-title">Facility Summary</h2>
+            </div>
+            <p class="section-desc">Aggregated emissions performance by registered location.</p>
+            <div id="facility-breakdown-error" class="error-text"></div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Facility</th>
+                            <th>Country</th>
+                            <th class="num-col">Scope 1 (kg)</th>
+                            <th class="num-col">Scope 2 (kg)</th>
+                            <th class="num-col">Total (kg CO₂e)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="by-facility-tbody">
+                        <tr>
+                            <td colspan="5" style="color: var(--text-muted); padding: 2rem 1.25rem;">Loading facility breakdown...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <hr class="hairline-divider">
+
+        <!-- NEW Section: Product Carbon Footprint (PCF) -->
+        <section class="page-section" id="product-footprint">
+            <div class="section-header-wrap">
+                <svg class="section-icon" viewBox="0 0 24 24">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                    <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                </svg>
+                <h2 class="section-title">Product Carbon Footprint (PCF)</h2>
+            </div>
+            <p class="section-desc">Life Cycle Assessment (LCA) module calculating cradle-to-gate component emissions per product unit.</p>
+
+            <div class="forms-layout">
+                <!-- Column A: Create Product -->
+                <div>
+                    <div class="form-column-title">Register Product</div>
+                    <form id="product-create-form">
+                        <div class="form-group">
+                            <label for="prod-name">Product Name</label>
+                            <input type="text" id="prod-name" placeholder="EV Battery Pack 75kWh" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-sku">SKU / Identifier</label>
+                            <input type="text" id="prod-sku" placeholder="BAT-75KWH-V2" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="prod-facility">Manufacturing Facility</label>
+                            <select id="prod-facility" required>
+                                <option value="">Loading facilities...</option>
+                            </select>
+                        </div>
+                        <button type="submit" id="prod-submit-btn" class="btn-primary">Create Product</button>
+                        <div id="product-msg" class="msg-box"></div>
+                    </form>
+                </div>
+
+                <!-- Column B: Add Material Component -->
+                <div>
+                    <div class="form-column-title">Add Component Material</div>
+                    <form id="component-add-form">
+                        <div class="form-group">
+                            <label for="comp-product-id">Target Product</label>
+                            <select id="comp-product-id" required>
+                                <option value="">Select a product first...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-row-2">
+                            <div>
+                                <label for="comp-material">Material</label>
+                                <select id="comp-material" required>
+                                    <option value="steel">Steel (2.00 kg CO₂e/kg)</option>
+                                    <option value="aluminum">Aluminum (11.50 kg CO₂e/kg)</option>
+                                    <option value="plastic (PET)">Plastic - PET (2.15 kg CO₂e/kg)</option>
+                                    <option value="cardboard/paper packaging">Cardboard/Paper (0.94 kg CO₂e/kg)</option>
+                                    <option value="cotton textile">Cotton Textile (5.50 kg CO₂e/kg)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="comp-factor">Emission Factor (kg CO₂e/kg)</label>
+                                <input type="number" step="any" id="comp-factor" value="2.0" required readonly style="opacity: 0.85;">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="comp-weight">Component Weight (kg)</label>
+                            <input type="number" step="any" min="0.001" id="comp-weight" placeholder="e.g. 45.5" required>
+                        </div>
+
+                        <button type="submit" id="comp-submit-btn" class="btn-primary">Add Component</button>
+                        <div id="comp-msg" class="msg-box"></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Product Footprints Table -->
+            <div style="margin-top: 3.5rem;">
+                <div class="form-column-title" style="border: none; margin-bottom: 1rem;">Registered Products &amp; Cradle-to-Gate Footprint</div>
+                <div id="pcf-error" class="error-text"></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Product</th>
+                                <th>SKU</th>
+                                <th>Facility</th>
+                                <th class="num-col">Components</th>
+                                <th class="num-col">Total PCF (kg CO₂e)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pcf-tbody">
+                            <tr>
+                                <td colspan="5" style="color: var(--text-muted); padding: 2rem 1.25rem;">Loading product footprints...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <hr class="hairline-divider">
+
+        <!-- NEW Section: Supplier Engagement -->
+        <section class="page-section" id="supplier-engagement">
+            <div class="section-header-wrap">
+                <svg class="section-icon" viewBox="0 0 24 24">
+                    <circle cx="18" cy="18" r="3"></circle>
+                    <circle cx="6" cy="6" r="3"></circle>
+                    <path d="M13 6h3a2 2 0 0 1 2 2v7"></path>
+                    <line x1="6" y1="9" x2="6" y2="21"></line>
+                </svg>
+                <h2 class="section-title">Supplier Engagement</h2>
+            </div>
+            <p class="section-desc">Supply chain Scope 3 primary data collection, verified disclosures, and supplier scorecards.</p>
+
+            <div class="forms-layout">
+                <!-- Column A: Register Supplier -->
+                <div>
+                    <div class="form-column-title">Register Supplier</div>
+                    <form id="supplier-create-form">
+                        <div class="form-group">
+                            <label for="supp-name">Supplier Entity</label>
+                            <input type="text" id="supp-name" placeholder="Kyoto Steel Mills Ltd." required>
+                        </div>
+                        <div class="form-group">
+                            <label for="supp-country">Country / Jurisdiction</label>
+                            <input type="text" id="supp-country" placeholder="e.g. JP, DE, US, KR" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="supp-category">Supply Category</label>
+                            <select id="supp-category" required>
+                                <option value="Raw Materials">Raw Materials</option>
+                                <option value="Logistics">Logistics</option>
+                                <option value="Packaging">Packaging</option>
+                                <option value="Manufacturing">Manufacturing</option>
+                            </select>
+                        </div>
+                        <button type="submit" id="supp-submit-btn" class="btn-primary">Register Supplier</button>
+                        <div id="supplier-msg" class="msg-box"></div>
+                    </form>
+                </div>
+
+                <!-- Column B: Log Supplier Emissions -->
+                <div>
+                    <div class="form-column-title">Log Supplier Self-Reported Emissions</div>
+                    <form id="supplier-emissions-form">
+                        <div class="form-group">
+                            <label for="supp-em-id">Reporting Supplier</label>
+                            <select id="supp-em-id" required>
+                                <option value="">Loading suppliers...</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="supp-em-period">Reporting Period</label>
+                            <input type="text" id="supp-em-period" placeholder="e.g. 2026-Q1 or FY2025" required>
+                        </div>
+
+                        <div class="form-row-2">
+                            <div>
+                                <label for="supp-em-s1">Scope 1 (kg CO₂e)</label>
+                                <input type="number" step="any" min="0" id="supp-em-s1" placeholder="0.0" required>
+                            </div>
+                            <div>
+                                <label for="supp-em-s2">Scope 2 (kg CO₂e)</label>
+                                <input type="number" step="any" min="0" id="supp-em-s2" placeholder="0.0" required>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="supp-em-s3">Scope 3 (kg CO₂e)</label>
+                            <input type="number" step="any" min="0" id="supp-em-s3" placeholder="0.0" required>
+                        </div>
+
+                        <button type="submit" id="supp-em-submit-btn" class="btn-primary">Submit Emissions Data</button>
+                        <div id="supp-em-msg" class="msg-box"></div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Supplier Scorecards Table -->
+            <div style="margin-top: 3.5rem;">
+                <div class="form-column-title" style="border: none; margin-bottom: 1rem;">Supplier Emissions Scorecard Ledger</div>
+                <div id="suppliers-error" class="error-text"></div>
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Supplier</th>
+                                <th>Country</th>
+                                <th>Category</th>
+                                <th>Status</th>
+                                <th class="num-col">Total Reported (kg)</th>
+                                <th style="text-align: right;">Data Completeness</th>
+                            </tr>
+                        </thead>
+                        <tbody id="suppliers-tbody">
+                            <tr>
+                                <td colspan="6" style="color: var(--text-muted); padding: 2rem 1.25rem;">Loading supplier scorecards...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <hr class="hairline-divider">
+
+        <!-- Section: Compliance Readiness -->
+        <section class="page-section" id="compliance-readiness">
+            <div class="section-header-wrap">
+                <svg class="section-icon" viewBox="0 0 24 24">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                    <polyline points="9 12 11 14 15 10"></polyline>
+                </svg>
+                <h2 class="section-title">Compliance Readiness</h2>
+            </div>
+            <p class="section-desc">Prerequisite Scope 1, 2 &amp; 3 granular ledger records and verified site audit stamps.</p>
+
+            <div class="compliance-grid">
+                <!-- CSRD -->
+                <div class="compliance-item">
+                    <div>
+                        <div class="compliance-name">CSRD</div>
+                        <p class="compliance-desc">Corporate Sustainability Reporting Directive (ESRS E1 Climate Standard). Prerequisite Scope 1 &amp; 2 data layer.</p>
+                    </div>
+                    <span class="badge badge-ready">&bull; Data Foundation: Ready</span>
+                </div>
+
+                <!-- TCFD -->
+                <div class="compliance-item">
+                    <div>
+                        <div class="compliance-name">TCFD</div>
+                        <p class="compliance-desc">Task Force on Climate-related Financial Disclosures. Metrics &amp; Targets pillar with historical emissions tracking.</p>
+                    </div>
+                    <span class="badge badge-ready">&bull; Data Foundation: Ready</span>
+                </div>
+
+                <!-- EU Taxonomy -->
+                <div class="compliance-item">
+                    <div>
+                        <div class="compliance-name">EU Taxonomy</div>
+                        <p class="compliance-desc">Substantial contribution criteria for climate mitigation based on facility energy &amp; fuel carbon intensity data.</p>
+                    </div>
+                    <span class="badge badge-ready">&bull; Data Foundation: Ready</span>
+                </div>
+
+                <!-- CBAM -->
+                <div class="compliance-item">
+                    <div>
+                        <div class="compliance-name">CBAM</div>
+                        <p class="compliance-desc">Carbon Border Adjustment Mechanism. Direct (Scope 1) and indirect (Scope 2) embedded emissions by geography.</p>
+                    </div>
+                    <span class="badge badge-ready">&bull; Data Foundation: Ready</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Global state
+        let facilitiesMap = {};
+        let productsMap = {};
+        let suppliersMap = {};
+        let chartInstance = null;
+        let emissionsTarget = 25.0; // In-memory JS variable for target (tCO2e)
+        let currentTotalTco2e = 0.0; // Current total emissions (tCO2e)
+        let previousTotalTco2e = null; // Stored for smooth hero number tick-up animation
+        let recentEntriesData = []; // Cached array of fetched activity entries for CSV export
+
+        // Hardcoded reference emission factors for PCF component selection
+        const MATERIAL_EMISSION_FACTORS = {
+            "steel": 2.0,
+            "aluminum": 11.5,
+            "plastic (PET)": 2.15,
+            "cardboard/paper packaging": 0.94,
+            "cotton textile": 5.5
+        };
+
+        // Escape HTML helper
+        function escapeHtml(str) {
+            if (str === null || str === undefined) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Initialize today's date for date input
+        function initDefaultDate() {
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('act-date');
+            if (dateInput) {
+                dateInput.value = today;
+            }
+        }
+
+        // Sidebar drawer toggle
+        function setupSidebar() {
+            const toggleBtn = document.getElementById('sidebar-toggle-btn');
+            const closeBtn = document.getElementById('sidebar-close-btn');
+            const drawer = document.getElementById('sidebar-drawer');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            const links = document.querySelectorAll('.sidebar-link');
+
+            function openSidebar() {
+                drawer.classList.add('active');
+                backdrop.classList.add('active');
+            }
+
+            function closeSidebar() {
+                drawer.classList.remove('active');
+                backdrop.classList.remove('active');
+            }
+
+            if (toggleBtn) toggleBtn.addEventListener('click', openSidebar);
+            if (closeBtn) closeBtn.addEventListener('click', closeSidebar);
+            if (backdrop) backdrop.addEventListener('click', closeSidebar);
+
+            links.forEach(link => {
+                link.addEventListener('click', () => {
+                    links.forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    closeSidebar();
+                });
+            });
+        }
+
+        // Deliberate motion moment: Smooth number tick-up animation over ~600ms
+        function animateCounter(element, start, end, duration = 600) {
+            if (isNaN(start) || start === end) {
+                element.textContent = Number(end).toLocaleString(undefined, {
+                    minimumFractionDigits: 3,
+                    maximumFractionDigits: 3
+                });
+                return;
+            }
+            const range = end - start;
+            const startTime = performance.now();
+
+            function updateStep(now) {
+                const elapsed = now - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                // Ease-out cubic curve
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                const currentVal = start + range * easeOut;
+
+                element.textContent = Number(currentVal).toLocaleString(undefined, {
+                    minimumFractionDigits: 3,
+                    maximumFractionDigits: 3
+                });
+
+                if (progress < 1) {
+                    requestAnimationFrame(updateStep);
+                } else {
+                    element.textContent = Number(end).toLocaleString(undefined, {
+                        minimumFractionDigits: 3,
+                        maximumFractionDigits: 3
+                    });
+                }
+            }
+            requestAnimationFrame(updateStep);
+        }
+
+        // Update Target Progress Bar (Vermillion indicator)
+        function updateProgressBar() {
+            const bar = document.getElementById('target-progress-bar');
+            const statusText = document.getElementById('progress-text');
+            const percentText = document.getElementById('progress-percent');
+            if (!bar || !statusText || !percentText) return;
+
+            if (isNaN(emissionsTarget) || emissionsTarget <= 0) {
+                bar.style.width = '0%';
+                bar.className = 'progress-bar-fill progress-under';
+                statusText.innerHTML = '<span style="color: var(--text-muted);">Enter target &gt; 0 tCO₂e</span>';
+                percentText.textContent = '';
+                return;
+            }
+
+            const percent = (currentTotalTco2e / emissionsTarget) * 100;
+            const displayWidth = Math.min(Math.max(percent, 0), 100);
+            bar.style.width = `${displayWidth}%`;
+
+            if (currentTotalTco2e > emissionsTarget) {
+                bar.className = 'progress-bar-fill progress-over';
+                const excess = (currentTotalTco2e - emissionsTarget).toFixed(3);
+                statusText.innerHTML = `<span style="color: var(--accent-vermillion); font-weight: 500;">Exceeded</span>: ${currentTotalTco2e.toFixed(3)} / ${emissionsTarget.toFixed(3)} tCO₂e (+${excess})`;
+                percentText.innerHTML = `<span style="color: var(--accent-vermillion);">${percent.toFixed(1)}%</span>`;
+            } else {
+                bar.className = 'progress-bar-fill progress-under';
+                const remaining = (emissionsTarget - currentTotalTco2e).toFixed(3);
+                statusText.innerHTML = `Within Budget: ${currentTotalTco2e.toFixed(3)} / ${emissionsTarget.toFixed(3)} tCO₂e (${remaining} rem)`;
+                percentText.innerHTML = `<span>${percent.toFixed(1)}%</span>`;
+            }
+        }
+
+        // 1. Fetch Summary & Update Header + Chart + Target Progress
+        async function fetchEmissionsSummary() {
+            const headerErr = document.getElementById('header-error');
+            const chartErr = document.getElementById('chart-error');
+            try {
+                if (headerErr) headerErr.textContent = '';
+                if (chartErr) chartErr.textContent = '';
+
+                const response = await fetch('/emissions/summary');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                const data = await response.json();
+
+                const totalKg = Number(data.total || 0);
+                const totalTco2e = Number((totalKg / 1000).toFixed(3));
+                const scope1Total = Number(data.scope1_total || 0);
+                const scope2Total = Number(data.scope2_total || 0);
+
+                currentTotalTco2e = totalKg / 1000;
+
+                // Animate or set total tCO2e readout
+                const totalEl = document.getElementById('total-tco2e');
+                if (previousTotalTco2e !== null && previousTotalTco2e !== totalTco2e) {
+                    animateCounter(totalEl, previousTotalTco2e, totalTco2e, 600);
+                } else {
+                    totalEl.textContent = totalTco2e.toLocaleString(undefined, {
+                        minimumFractionDigits: 3,
+                        maximumFractionDigits: 3
+                    });
+                }
+                previousTotalTco2e = totalTco2e;
+
+                document.getElementById('metric-sub').textContent =
+                    `Total gross emissions: ${totalKg.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})} kg CO₂e ` +
+                    `(Scope 1: ${scope1Total.toLocaleString()} kg | Scope 2: ${scope2Total.toLocaleString()} kg)`;
+
+                // Update Progress Bar
+                updateProgressBar();
+
+                // Update Chart
+                updateChart(scope1Total, scope2Total);
+            } catch (err) {
+                if (headerErr) headerErr.textContent = `Failed to fetch emissions summary: ${err.message}`;
+                if (chartErr) chartErr.textContent = `Failed to update chart: ${err.message}`;
+            }
+        }
+
+        // 2. Chart.js Management - Japanese Editorial Minimalist Theme
+        function updateChart(scope1, scope2) {
+            const canvas = document.getElementById('emissionsChart');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            if (chartInstance) {
+                chartInstance.data.datasets[0].data = [scope1, scope2];
+                chartInstance.update();
+            } else {
+                chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Scope 1 (Direct)', 'Scope 2 (Indirect)'],
+                        datasets: [{
+                            label: 'Emissions (kg CO₂e)',
+                            data: [scope1, scope2],
+                            backgroundColor: [
+                                '#C0392B', // Vermillion accent for Scope 1
+                                '#B5AFA5'  // Muted warm grey for Scope 2
+                            ],
+                            borderWidth: 0,
+                            barThickness: 36
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: '#1A1A1A',
+                                titleColor: '#F7F5F0',
+                                bodyColor: '#8A8580',
+                                titleFont: { family: "'Noto Sans', sans-serif", size: 12 },
+                                bodyFont: { family: "'Noto Sans', sans-serif", size: 12 },
+                                cornerRadius: 0,
+                                padding: 10,
+                                callbacks: {
+                                    label: function(context) {
+                                        const val = context.parsed.y || 0;
+                                        const tons = (val / 1000).toFixed(3);
+                                        return ` ${val.toLocaleString()} kg CO₂e (${tons} tCO₂e)`;
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: '#8A8580',
+                                    font: { family: "'Noto Sans', sans-serif", size: 11 }
+                                },
+                                border: {
+                                    display: false
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: '#1A1A1A',
+                                    font: { family: "'Noto Sans', sans-serif", size: 12 }
+                                },
+                                border: {
+                                    color: '#DDD8CF'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // 3. Load Facilities for Select and Mapping
+        async function fetchFacilities() {
+            const selectAct = document.getElementById('act-facility');
+            const selectProd = document.getElementById('prod-facility');
+            try {
+                const response = await fetch('/facilities');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                const facilities = await response.json();
+
+                facilitiesMap = {};
+                if (selectAct) selectAct.innerHTML = '<option value="">Select Facility...</option>';
+                if (selectProd) selectProd.innerHTML = '<option value="">Select Manufacturing Facility...</option>';
+
+                facilities.forEach(fac => {
+                    facilitiesMap[fac.id] = fac;
+                    const opt1 = document.createElement('option');
+                    opt1.value = fac.id;
+                    opt1.textContent = `${fac.name} (${fac.country})`;
+                    if (selectAct) selectAct.appendChild(opt1);
+
+                    const opt2 = document.createElement('option');
+                    opt2.value = fac.id;
+                    opt2.textContent = `${fac.name} (${fac.country})`;
+                    if (selectProd) selectProd.appendChild(opt2);
+                });
+
+                if (facilities.length === 0) {
+                    if (selectAct) selectAct.innerHTML = '<option value="">No facilities registered yet</option>';
+                    if (selectProd) selectProd.innerHTML = '<option value="">No facilities registered yet</option>';
+                }
+            } catch (err) {
+                if (selectAct) selectAct.innerHTML = `<option value="">Error loading facilities: ${err.message}</option>`;
+            }
+        }
+
+        // 4. Fetch Recent Entries Table (GET /activity-entries)
+        async function fetchRecentEntries() {
+            const errEl = document.getElementById('entries-error');
+            const tbody = document.getElementById('entries-tbody');
+            try {
+                if (errEl) errEl.textContent = '';
+
+                if (Object.keys(facilitiesMap).length === 0) {
+                    await fetchFacilities();
+                }
+
+                const response = await fetch('/activity-entries');
+
+                if (!response.ok) {
+                    recentEntriesData = [];
+                    const errData = await response.json().catch(() => ({}));
+                    errEl.textContent = `Failed to load activity entries: ${errData.detail || response.statusText}`;
+                    tbody.innerHTML = '<tr><td colspan="7" style="color: var(--accent-vermillion); padding: 1.5rem 1.25rem;">Failed to load entries.</td></tr>';
+                    return;
+                }
+
+                const entries = await response.json();
+                recentEntriesData = entries || [];
+                if (!entries || entries.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="color: var(--text-muted); padding: 2rem 1.25rem;">No activity entries recorded yet.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                entries.forEach(entry => {
+                    const facilityObj = facilitiesMap[entry.facility_id];
+                    const facilityDisplayName = facilityObj ? facilityObj.name : `Facility #${entry.facility_id}`;
+
+                    const badgeClass = entry.scope === 1 ? 'badge-scope1' : 'badge-scope2';
+                    const emKg = Number(entry.emissions_kg || 0).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${escapeHtml(facilityDisplayName)}</td>
+                        <td><span class="badge ${badgeClass}">Scope ${entry.scope}</span></td>
+                        <td><code>${escapeHtml(entry.fuel_type)}</code></td>
+                        <td class="num-col">${Number(entry.quantity).toLocaleString()}</td>
+                        <td>${escapeHtml(entry.unit)}</td>
+                        <td class="num-col"><strong>${emKg}</strong></td>
+                        <td style="color: var(--text-muted); text-align: right;">${escapeHtml(entry.date || '')}</td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                recentEntriesData = [];
+                if (errEl) errEl.textContent = `Error fetching activity entries: ${err.message}`;
+                tbody.innerHTML = '<tr><td colspan="7" style="color: var(--accent-vermillion); padding: 1.5rem 1.25rem;">Error fetching entries.</td></tr>';
+            }
+        }
+
+        // Export Recent Entries to CSV via Blob + <a download>
+        function exportEntriesToCSV() {
+            if (!recentEntriesData || recentEntriesData.length === 0) {
+                alert('No activity entries available to export.');
+                return;
+            }
+
+            const headers = [
+                'Facility',
+                'Scope',
+                'Fuel',
+                'Quantity',
+                'Unit',
+                'Emissions (kg)',
+                'Date'
+            ];
+
+            const rows = recentEntriesData.map(entry => {
+                const fac = facilitiesMap[entry.facility_id];
+                const facName = fac ? fac.name : `Facility #${entry.facility_id}`;
+                return [
+                    `"${String(facName).replace(/"/g, '""')}"`,
+                    entry.scope,
+                    `"${String(entry.fuel_type || '').replace(/"/g, '""')}"`,
+                    entry.quantity,
+                    `"${String(entry.unit || '').replace(/"/g, '""')}"`,
+                    entry.emissions_kg,
+                    `"${String(entry.date || '').replace(/"/g, '""')}"`
+                ].join(',');
+            });
+
+            const csvContent = [headers.join(','), ...rows].join('\r\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            const dateStr = new Date().toISOString().split('T')[0];
+            downloadLink.download = `activity_entries_${dateStr}.csv`;
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(url);
+        }
+
+        // 5. Fetch Emissions by Facility Table
+        async function fetchEmissionsByFacility() {
+            const errEl = document.getElementById('facility-breakdown-error');
+            const tbody = document.getElementById('by-facility-tbody');
+            try {
+                if (errEl) errEl.textContent = '';
+                const response = await fetch('/emissions/by-facility');
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="color: var(--text-muted); padding: 2rem 1.25rem;">No facility data available yet.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                data.forEach(item => {
+                    const s1 = Number(item.scope1_total || 0).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    const s2 = Number(item.scope2_total || 0).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+                    const total = Number(item.total_emissions_kg || 0).toLocaleString(undefined, {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    });
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${escapeHtml(item.facility_name)}</td>
+                        <td>${escapeHtml(item.country)}</td>
+                        <td class="num-col">${s1}</td>
+                        <td class="num-col">${s2}</td>
+                        <td class="num-col"><strong>${total}</strong></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                if (errEl) errEl.textContent = `Error loading facility emissions: ${err.message}`;
+                tbody.innerHTML = '<tr><td colspan="5" style="color: var(--accent-vermillion); padding: 1.5rem 1.25rem;">Failed to load breakdown.</td></tr>';
+            }
+        }
+
+        // 6. Fetch AI Reduction Insight (GET /insights)
+        async function fetchInsights() {
+            const textEl = document.getElementById('insight-recommendation');
+            const detailsEl = document.getElementById('insight-details');
+            const errEl = document.getElementById('insight-error');
+            try {
+                if (errEl) errEl.textContent = '';
+                const response = await fetch('/insights');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                const data = await response.json();
+                textEl.textContent = data.recommendation || 'No recommendation available.';
+
+                if (data.top_source && data.top_facility) {
+                    const srcFac = data.top_source.facility_name || `Facility #${data.top_source.facility_id}`;
+                    const srcKg = Number(data.top_source.emissions_kg).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1});
+                    const facKg = Number(data.top_facility.total_emissions_kg).toLocaleString(undefined, {minimumFractionDigits: 1, maximumFractionDigits: 1});
+
+                    detailsEl.innerHTML = `
+                        <span>Point Source: ${escapeHtml(srcFac)} &bull; ${escapeHtml(data.top_source.fuel_type)} (${srcKg} kg CO₂e)</span>
+                        <span>Facility Total: ${escapeHtml(data.top_facility.facility_name)} (${facKg} kg CO₂e)</span>
+                    `;
+                    detailsEl.style.display = 'flex';
+                } else {
+                    detailsEl.style.display = 'none';
+                }
+            } catch (err) {
+                if (errEl) errEl.textContent = `Error fetching reduction insight: ${err.message}`;
+            }
+        }
+
+        // 7. Product LCA (PCF) Management
+        async function fetchProductsAndFootprints() {
+            const selectCompProd = document.getElementById('comp-product-id');
+            const tbody = document.getElementById('pcf-tbody');
+            const errEl = document.getElementById('pcf-error');
+            try {
+                if (errEl) errEl.textContent = '';
+                const response = await fetch('/products');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                const products = await response.json();
+
+                productsMap = {};
+                selectCompProd.innerHTML = '<option value="">Select a product...</option>';
+
+                if (products.length === 0) {
+                    selectCompProd.innerHTML = '<option value="">No products created yet</option>';
+                    tbody.innerHTML = '<tr><td colspan="5" style="color: var(--text-muted); padding: 2rem 1.25rem;">No products registered yet. Create a product above.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+
+                for (const p of products) {
+                    productsMap[p.id] = p;
+                    const opt = document.createElement('option');
+                    opt.value = p.id;
+                    opt.textContent = `${p.name} (${p.sku})`;
+                    selectCompProd.appendChild(opt);
+
+                    // Fetch footprint for each product
+                    let footprintData = { total_pcf_kg: 0, components: [] };
+                    try {
+                        const fpRes = await fetch(`/products/${p.id}/footprint`);
+                        if (fpRes.ok) {
+                            footprintData = await fpRes.json();
+                        }
+                    } catch (e) {
+                        // ignore footprint failure
+                    }
+
+                    const fac = facilitiesMap[p.facility_id];
+                    const facName = fac ? fac.name : `Facility #${p.facility_id}`;
+                    const compSummary = footprintData.components && footprintData.components.length > 0
+                        ? `${footprintData.components.length} materials (${footprintData.components.map(c => c.material_name).join(', ')})`
+                        : '<span style="color: var(--text-muted);">No components added</span>';
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${escapeHtml(p.name)}</strong></td>
+                        <td><code>${escapeHtml(p.sku)}</code></td>
+                        <td>${escapeHtml(facName)}</td>
+                        <td class="num-col">${compSummary}</td>
+                        <td class="num-col"><strong style="color: var(--accent-vermillion);">${Number(footprintData.total_pcf_kg || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td>
+                    `;
+                    tbody.appendChild(tr);
+                }
+            } catch (err) {
+                if (errEl) errEl.textContent = `Error loading product LCA data: ${err.message}`;
+                tbody.innerHTML = '<tr><td colspan="5" style="color: var(--accent-vermillion); padding: 1.5rem 1.25rem;">Failed to load products.</td></tr>';
+            }
+        }
+
+        // 8. Supplier Engagement Management
+        async function fetchSupplierScorecards() {
+            const selectSupp = document.getElementById('supp-em-id');
+            const tbody = document.getElementById('suppliers-tbody');
+            const errEl = document.getElementById('suppliers-error');
+            try {
+                if (errEl) errEl.textContent = '';
+                const response = await fetch('/suppliers/scorecards');
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                const scorecards = await response.json();
+
+                suppliersMap = {};
+                selectSupp.innerHTML = '<option value="">Select a supplier...</option>';
+
+                if (scorecards.length === 0) {
+                    selectSupp.innerHTML = '<option value="">No suppliers registered yet</option>';
+                    tbody.innerHTML = '<tr><td colspan="6" style="color: var(--text-muted); padding: 2rem 1.25rem;">No suppliers registered yet. Register a supplier above.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = '';
+                scorecards.forEach(s => {
+                    suppliersMap[s.supplier_id] = s;
+                    const opt = document.createElement('option');
+                    opt.value = s.supplier_id;
+                    opt.textContent = `${s.name} (${s.country} &bull; ${s.category})`;
+                    selectSupp.appendChild(opt);
+
+                    const statusClass = `status-${(s.status || 'pending').toLowerCase()}`;
+                    const repKg = Number(s.total_reported_kg || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td><strong>${escapeHtml(s.name)}</strong></td>
+                        <td>${escapeHtml(s.country)}</td>
+                        <td>${escapeHtml(s.category)}</td>
+                        <td><span class="badge badge-status ${statusClass}">${escapeHtml(s.status)}</span></td>
+                        <td class="num-col"><strong>${repKg}</strong></td>
+                        <td style="text-align: right;"><span style="color: ${s.data_completeness === 'Complete' ? 'var(--accent-vermillion)' : 'var(--text-muted)'};">${escapeHtml(s.data_completeness)}</span></td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            } catch (err) {
+                if (errEl) errEl.textContent = `Error loading supplier scorecards: ${err.message}`;
+                tbody.innerHTML = '<tr><td colspan="6" style="color: var(--accent-vermillion); padding: 1.5rem 1.25rem;">Failed to load scorecards.</td></tr>';
+            }
+        }
+
+        // Refresh all dependent widgets
+        async function refreshAllData() {
+            await Promise.allSettled([
+                fetchEmissionsSummary(),
+                fetchRecentEntries(),
+                fetchEmissionsByFacility(),
+                fetchInsights(),
+                fetchProductsAndFootprints(),
+                fetchSupplierScorecards()
+            ]);
+        }
+
+        // Form Submit: Register Facility (Column A)
+        document.getElementById('facility-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msgEl = document.getElementById('facility-msg');
+            const submitBtn = document.getElementById('fac-submit-btn');
+            const name = document.getElementById('fac-name').value.trim();
+            const country = document.getElementById('fac-country').value.trim();
+
+            msgEl.className = 'msg-box';
+            msgEl.textContent = '';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/facilities', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, country })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `Server returned ${response.status}`);
+                }
+
+                const created = await response.json();
+                msgEl.className = 'msg-box msg-success';
+                msgEl.textContent = `Facility "${created.name}" registered`;
+                document.getElementById('fac-name').value = '';
+                document.getElementById('fac-country').value = '';
+
+                await fetchFacilities();
+                await fetchEmissionsByFacility();
+            } catch (err) {
+                msgEl.className = 'msg-box msg-error';
+                msgEl.textContent = `Failed to add facility: ${err.message}`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Form Submit: Log Activity Entry (Column B)
+        document.getElementById('activity-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msgEl = document.getElementById('activity-msg');
+            const submitBtn = document.getElementById('act-submit-btn');
+
+            const facility_id = parseInt(document.getElementById('act-facility').value, 10);
+            const scope = parseInt(document.getElementById('act-scope').value, 10);
+            const fuel_type = document.getElementById('act-fuel').value;
+            const geography = document.getElementById('act-geo').value;
+            const quantity = parseFloat(document.getElementById('act-quantity').value);
+            const unit = document.getElementById('act-unit').value.trim();
+            const date = document.getElementById('act-date').value;
+
+            msgEl.className = 'msg-box';
+            msgEl.textContent = '';
+
+            if (!facility_id) {
+                msgEl.className = 'msg-box msg-error';
+                msgEl.textContent = 'Please select a facility.';
+                return;
+            }
+
+            submitBtn.disabled = true;
+
+            try {
+                const payload = {
+                    facility_id,
+                    scope,
+                    fuel_type,
+                    geography,
+                    quantity,
+                    unit,
+                    date
+                };
+
+                const response = await fetch('/activity-entries', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errData = await response.json().catch(() => ({}));
+                    const detail = errData.detail || `Server returned status ${response.status}`;
+                    msgEl.className = 'msg-box msg-error';
+                    msgEl.textContent = detail;
+                    return;
+                }
+
+                const created = await response.json();
+                msgEl.className = 'msg-box msg-success';
+                msgEl.textContent = `+${created.emissions_kg} kg CO₂e recorded`;
+
+                document.getElementById('act-quantity').value = '';
+                document.getElementById('act-unit').value = '';
+
+                await refreshAllData();
+            } catch (err) {
+                msgEl.className = 'msg-box msg-error';
+                msgEl.textContent = `Error: ${err.message}`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Form Submit: Create Product
+        document.getElementById('product-create-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msgEl = document.getElementById('product-msg');
+            const submitBtn = document.getElementById('prod-submit-btn');
+            const name = document.getElementById('prod-name').value.trim();
+            const sku = document.getElementById('prod-sku').value.trim();
+            const facility_id = parseInt(document.getElementById('prod-facility').value, 10);
+
+            msgEl.className = 'msg-box';
+            msgEl.textContent = '';
+
+            if (!facility_id) {
+                msgEl.className = 'msg-box msg-error';
+                msgEl.textContent = 'Please select a facility.';
+                return;
+            }
+
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/products', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, sku, facility_id })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `Server returned ${response.status}`);
+                }
+
+                const created = await response.json();
+                msgEl.className = 'msg-box msg-success';
+                msgEl.textContent = `Product "${created.name}" created`;
+                document.getElementById('prod-name').value = '';
+                document.getElementById('prod-sku').value = '';
+
+                await fetchProductsAndFootprints();
+            } catch (err) {
+                msgEl.className = 'msg-box msg-error';
+                msgEl.textContent = `Error: ${err.message}`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Auto-update emission factor on material select
+        document.getElementById('comp-material').addEventListener('change', (e) => {
+            const factorInput = document.getElementById('comp-factor');
+            const val = e.target.value;
+            if (MATERIAL_EMISSION_FACTORS[val] !== undefined) {
+                factorInput.value = MATERIAL_EMISSION_FACTORS[val];
+            }
+        });
+
+        // Form Submit: Add Component Material to Product
+        document.getElementById('component-add-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msgEl = document.getElementById('comp-msg');
+            const submitBtn = document.getElementById('comp-submit-btn');
+            const product_id = parseInt(document.getElementById('comp-product-id').value, 10);
+            const material_name = document.getElementById('comp-material').value;
+            const material_emission_factor_kgco2e_per_kg = parseFloat(document.getElementById('comp-factor').value);
+            const weight_kg = parseFloat(document.getElementById('comp-weight').value);
+
+            msgEl.className = 'msg-box';
+            msgEl.textContent = '';
+
+            if (!product_id) {
+                msgEl.className = 'msg-box msg-error';
+                msgEl.textContent = 'Please select a target product.';
+                return;
+            }
+
+            submitBtn.disabled = true;
+
+            try {
+                const payload = {
+                    material_name,
+                    weight_kg,
+                    material_emission_factor_kgco2e_per_kg
+                };
+
+                const response = await fetch(`/products/${product_id}/components`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `Server returned ${response.status}`);
+                }
+
+                const compCreated = await response.json();
+                const calcKg = (weight_kg * material_emission_factor_kgco2e_per_kg).toFixed(2);
+                msgEl.className = 'msg-box msg-success';
+                msgEl.textContent = `+${weight_kg}kg ${compCreated.material_name} (+${calcKg} kg CO₂e) added`;
+                document.getElementById('comp-weight').value = '';
+
+                await fetchProductsAndFootprints();
+            } catch (err) {
+                msgEl.className = 'msg-box msg-error';
+                msgEl.textContent = `Error: ${err.message}`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Form Submit: Register Supplier
+        document.getElementById('supplier-create-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msgEl = document.getElementById('supplier-msg');
+            const submitBtn = document.getElementById('supp-submit-btn');
+            const name = document.getElementById('supp-name').value.trim();
+            const country = document.getElementById('supp-country').value.trim();
+            const category = document.getElementById('supp-category').value;
+
+            msgEl.className = 'msg-box';
+            msgEl.textContent = '';
+            submitBtn.disabled = true;
+
+            try {
+                const response = await fetch('/suppliers', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, country, category })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `Server returned ${response.status}`);
+                }
+
+                const created = await response.json();
+                msgEl.className = 'msg-box msg-success';
+                msgEl.textContent = `Supplier "${created.name}" registered`;
+                document.getElementById('supp-name').value = '';
+                document.getElementById('supp-country').value = '';
+
+                await fetchSupplierScorecards();
+            } catch (err) {
+                msgEl.className = 'msg-box msg-error';
+                msgEl.textContent = `Error: ${err.message}`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Form Submit: Log Supplier Emissions
+        document.getElementById('supplier-emissions-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msgEl = document.getElementById('supp-em-msg');
+            const submitBtn = document.getElementById('supp-em-submit-btn');
+            const supplier_id = parseInt(document.getElementById('supp-em-id').value, 10);
+            const reporting_period = document.getElementById('supp-em-period').value.trim();
+            const scope1_kg = parseFloat(document.getElementById('supp-em-s1').value || 0);
+            const scope2_kg = parseFloat(document.getElementById('supp-em-s2').value || 0);
+            const scope3_kg = parseFloat(document.getElementById('supp-em-s3').value || 0);
+
+            msgEl.className = 'msg-box';
+            msgEl.textContent = '';
+
+            if (!supplier_id) {
+                msgEl.className = 'msg-box msg-error';
+                msgEl.textContent = 'Please select a supplier.';
+                return;
+            }
+
+            submitBtn.disabled = true;
+
+            try {
+                const payload = {
+                    reporting_period,
+                    scope1_kg,
+                    scope2_kg,
+                    scope3_kg
+                };
+
+                const response = await fetch(`/suppliers/${supplier_id}/emissions`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.detail || `Server returned ${response.status}`);
+                }
+
+                const emLogged = await response.json();
+                const totalReported = (scope1_kg + scope2_kg + scope3_kg).toLocaleString();
+                msgEl.className = 'msg-box msg-success';
+                msgEl.textContent = `Reported ${totalReported} kg CO₂e for ${emLogged.reporting_period}`;
+                document.getElementById('supp-em-period').value = '';
+                document.getElementById('supp-em-s1').value = '';
+                document.getElementById('supp-em-s2').value = '';
+                document.getElementById('supp-em-s3').value = '';
+
+                await fetchSupplierScorecards();
+            } catch (err) {
+                msgEl.className = 'msg-box msg-error';
+                msgEl.textContent = `Error: ${err.message}`;
+            } finally {
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Initialize on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            initDefaultDate();
+            setupSidebar();
+
+            // Bind Emissions Target input (in-memory variable)
+            const targetInput = document.getElementById('emissions-target-input');
+            if (targetInput) {
+                targetInput.value = emissionsTarget;
+                targetInput.addEventListener('input', (e) => {
+                    const val = parseFloat(e.target.value);
+                    emissionsTarget = isNaN(val) ? 0 : val;
+                    updateProgressBar();
+                });
+            }
+
+            // Bind Export CSV button
+            const exportBtn = document.getElementById('export-csv-btn');
+            if (exportBtn) {
+                exportBtn.addEventListener('click', exportEntriesToCSV);
+            }
+
+            await fetchFacilities();
+            await refreshAllData();
+        });
+    </script>
+</body>
+</html>
