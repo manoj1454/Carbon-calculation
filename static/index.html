@@ -1384,9 +1384,133 @@
             margin-bottom: 1.25rem;
             font-weight: 300;
         }
+        /* ── Login Gate ─────────────────────────────────────────── */
+        #login-gate {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-canvas);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+            padding: 2rem;
+        }
+
+        .login-card {
+            background: var(--bg-hero);
+            border: 1px solid var(--border-hairline);
+            border-top: 3px solid var(--accent-vermillion);
+            padding: 3rem 2.75rem 2.5rem;
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        .login-logo {
+            font-family: var(--font-serif);
+            font-size: 1.7rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+            margin-bottom: 0.35rem;
+        }
+
+        .login-logo span {
+            color: var(--accent-vermillion);
+        }
+
+        .login-subtitle {
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 2.25rem;
+            font-family: var(--font-body);
+        }
+
+        .login-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border-hairline);
+            background: #FFFFFF;
+            font-family: var(--font-body);
+            font-size: 0.92rem;
+            color: var(--text-primary);
+            outline: none;
+            margin-bottom: 0.85rem;
+            transition: border-color 0.15s ease;
+        }
+
+        .login-input:focus {
+            border-color: var(--accent-vermillion);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 0.78rem 1rem;
+            background: var(--accent-vermillion);
+            color: #FFFFFF;
+            border: none;
+            font-family: var(--font-body);
+            font-size: 0.88rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.15s ease;
+        }
+
+        .login-btn:hover {
+            background: var(--accent-vermillion-hover);
+        }
+
+        .login-error {
+            font-size: 0.82rem;
+            color: var(--accent-vermillion);
+            margin-top: 0.85rem;
+            min-height: 1.2rem;
+            font-family: var(--font-body);
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+
+        .login-error.visible {
+            opacity: 1;
+        }
+
+        .login-divider {
+            width: 32px;
+            height: 1px;
+            background: var(--accent-vermillion);
+            margin: 0 auto 2rem;
+            opacity: 0.5;
+        }
     </style>
 </head>
 <body>
+
+    <!-- ── Login Gate ── -->
+    <div id="login-gate">
+        <div class="login-card">
+            <div class="login-logo">Nexgile-<span>Decarb</span>X</div>
+            <div class="login-subtitle">Enterprise Carbon Accounting Platform</div>
+            <div class="login-divider"></div>
+            <input
+                id="login-input"
+                class="login-input"
+                type="password"
+                placeholder="Enter access code"
+                autocomplete="off"
+                spellcheck="false"
+            >
+            <button id="login-btn" class="login-btn">Sign In</button>
+            <div id="login-error" class="login-error">Incorrect access code. Please try again.</div>
+        </div>
+    </div>
+
+    <!-- ── App Content (hidden until login) ── -->
+    <div id="app-content" style="display: none;">
+
     <!-- 1. Header Bar: Full-Width Top Anchor -->
     <nav class="top-nav">
         <div class="container nav-inner">
@@ -3920,54 +4044,96 @@
             }
         });
 
-        // Initialize on page load
-        window.addEventListener('DOMContentLoaded', async () => {
-            initDefaultDate();
-            setupSidebar();
+        // App initialization is deferred — called by login gate after successful auth.
 
-            // Bind Emissions Target input (in-memory variable)
-            const targetInput = document.getElementById('emissions-target-input');
-            if (targetInput) {
-                targetInput.value = emissionsTarget;
-                targetInput.addEventListener('input', (e) => {
-                    const val = parseFloat(e.target.value);
-                    emissionsTarget = isNaN(val) ? 0 : val;
-                    updateProgressBar();
+    </script>
+
+    <!-- ── Login Gate JS ── -->
+    <script>
+        (function () {
+            const ACCESS_CODE = 'decarbx2026';
+            let appInitialized = false;
+
+            const gate = document.getElementById('login-gate');
+            const appContent = document.getElementById('app-content');
+            const input = document.getElementById('login-input');
+            const btn = document.getElementById('login-btn');
+            const errEl = document.getElementById('login-error');
+
+            function showError() {
+                errEl.classList.add('visible');
+                input.value = '';
+                input.focus();
+                setTimeout(() => errEl.classList.remove('visible'), 3000);
+            }
+
+            async function initApp() {
+                if (appInitialized) return;
+                appInitialized = true;
+
+                initDefaultDate();
+                setupSidebar();
+
+                const targetInput = document.getElementById('emissions-target-input');
+                if (targetInput) {
+                    targetInput.value = emissionsTarget;
+                    targetInput.addEventListener('input', (e) => {
+                        const val = parseFloat(e.target.value);
+                        emissionsTarget = isNaN(val) ? 0 : val;
+                        updateProgressBar();
+                    });
+                }
+
+                const exportBtn = document.getElementById('export-csv-btn');
+                if (exportBtn) exportBtn.addEventListener('click', exportEntriesToCSV);
+
+                const redSlider = document.getElementById('slider-reduction');
+                const priceSlider = document.getElementById('slider-price');
+                if (redSlider) redSlider.addEventListener('input', updateScenarioPlanning);
+                if (priceSlider) priceSlider.addEventListener('input', updateScenarioPlanning);
+
+                await fetchEmissionFactors();
+                await fetchFacilities();
+                await refreshAllData();
+                initMap();
+                await updateEmissionsMap();
+                updateScenarioPlanning();
+
+                let resizeTimer;
+                window.addEventListener('resize', () => {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(() => {
+                        updateSankeyDiagram();
+                        if (mapInstance) mapInstance.invalidateSize();
+                    }, 180);
                 });
             }
 
-            // Bind Export CSV button
-            const exportBtn = document.getElementById('export-csv-btn');
-            if (exportBtn) {
-                exportBtn.addEventListener('click', exportEntriesToCSV);
+            async function handleLogin() {
+                const val = input.value.trim();
+                if (val === ACCESS_CODE) {
+                    gate.style.transition = 'opacity 0.3s ease';
+                    gate.style.opacity = '0';
+                    setTimeout(() => { gate.style.display = 'none'; }, 300);
+                    appContent.style.display = 'block';
+                    await initApp();
+                } else {
+                    showError();
+                }
             }
 
-            // Bind Scenario Planning Sliders
-            const redSlider = document.getElementById('slider-reduction');
-            const priceSlider = document.getElementById('slider-price');
-            if (redSlider) redSlider.addEventListener('input', updateScenarioPlanning);
-            if (priceSlider) priceSlider.addEventListener('input', updateScenarioPlanning);
-
-            await fetchEmissionFactors();
-            await fetchFacilities();
-            await refreshAllData();
-            initMap();
-            await updateEmissionsMap();
-            updateScenarioPlanning();
-
-            // Resize listener for responsive Sankey redraw
-            let resizeTimer;
-            window.addEventListener('resize', () => {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(() => {
-                    updateSankeyDiagram();
-                    if (mapInstance) mapInstance.invalidateSize();
-                }, 180);
+            btn.addEventListener('click', handleLogin);
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') handleLogin();
             });
-        });
 
+            // Auto-focus password field
+            window.addEventListener('DOMContentLoaded', () => input.focus());
+        })();
     </script>
+
     <!-- Toast Notification Container -->
     <div id="toast-container" class="toast-container"></div>
+</div><!-- /#app-content -->
 </body>
 </html>
