@@ -1,4 +1,4 @@
-# Nexgile-DecarbX
+# Carbon calculation
 
 Enterprise carbon accounting and environmental intelligence platform — audit-grade Scope 1/2 emissions tracking, product carbon footprinting, and supplier engagement, built as a functional proof-of-concept of a full enterprise carbon platform spec.
 
